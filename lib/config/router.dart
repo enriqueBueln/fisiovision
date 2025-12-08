@@ -1,7 +1,9 @@
 import 'package:fisiovision/screens/exercises/exercise_form.dart';
 import 'package:fisiovision/screens/exercises/exercise_sreen.dart';
+import 'package:fisiovision/screens/login/login_screen.dart';
 import 'package:fisiovision/screens/patient/patient_form_screen.dart';
 import 'package:fisiovision/screens/patient/patient_screen.dart';
+import 'package:fisiovision/screens/patient/routine-assignment/routineAssigmentScreen.dart';
 import 'package:fisiovision/screens/view_patient/patient/connection_web.dart';
 import 'package:fisiovision/screens/view_patient/patient/laptop_feedback.dart';
 import 'package:fisiovision/screens/view_patient/patient/mobile_camera_view.dart';
@@ -12,6 +14,13 @@ import 'package:go_router/go_router.dart';
 final appRouter = GoRouter(
   initialLocation: '/pacientes',
   routes: [
+    GoRoute(
+      path: '/asignacion-rutina',
+      builder: (context, state) {
+        return const RoutineAssignmentScreen();
+      },
+    ),
+    GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     // RUTA 1: Pacientes
     GoRoute(
       path: '/laptop-feedback',

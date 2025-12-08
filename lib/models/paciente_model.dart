@@ -1,9 +1,9 @@
 class Paciente {
   final String id;
   final String nombre;
-  final String diagnostico;
+  final String? diagnostico;
 
-  Paciente({required this.id, required this.nombre, required this.diagnostico});
+  Paciente({required this.id, required this.nombre, this.diagnostico});
 
   // Factory constructor: Transforma el JSON del backend a Objeto Dart
   factory Paciente.fromJson(Map<String, dynamic> json) {
