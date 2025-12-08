@@ -1,4 +1,5 @@
 import 'package:fisiovision/models/ejercicio_model.dart';
+import 'package:fisiovision/screens/exercises/exercise_detail_modal.dart';
 import 'package:fisiovision/widgets/scaffold_side_menu.dart';
 import 'package:fisiovision/widgets/side_menu.dart';
 import 'package:flutter/material.dart';
@@ -9,11 +10,13 @@ class ExercisesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scaffoldKey = GlobalKey<ScaffoldState>(); // Necesitas una key local
+    final scaffoldKey =
+        GlobalKey<ScaffoldState>(); // Necesitas una key local
 
     return ScaffoldSideMenu(
       title: "Biblioteca de Ejercicios",
-      subtitle: "Crea, edita y gestiona las rutinas de rehabilitación.",
+      subtitle:
+          "Crea, edita y gestiona las rutinas de rehabilitación.",
 
       buttonText: "Crear Nuevo Ejercicio",
       buttonIcon: const Icon(Icons.add),
@@ -21,7 +24,9 @@ class ExercisesScreen extends StatelessWidget {
         context.go('/ejercicio/nuevo');
       },
 
-      drawer: SideMenu(scaffoldKey: scaffoldKey), // Pasamos la key al SideMenu
+      drawer: SideMenu(
+        scaffoldKey: scaffoldKey,
+      ), // Pasamos la key al SideMenu
 
       body: const ExercisesView(), // El contenido principal
     );
@@ -40,14 +45,16 @@ final List<Exercise> dummyExercises = [
     series: 3,
     toleranceDegrees: 5,
     objetiveAngles: '90 grados de rodilla',
-    referenceImage: 'https://placehold.co/600x400/004d40/ffffff?text=Fuerza',
+    referenceImage:
+        'https://placehold.co/600x400/004d40/ffffff?text=Fuerza',
     completed: false,
     type: TypeExercise.Fuerza,
   ),
   Exercise(
     id: 'E002',
     nombre: 'Estiramiento Isquiotibial',
-    descripcion: 'Mejora la flexibilidad de la parte posterior del muslo.',
+    descripcion:
+        'Mejora la flexibilidad de la parte posterior del muslo.',
     referenceVideo: 'url_video_2',
     durationSeconds: 30,
     repeticiones: 1,
@@ -62,21 +69,24 @@ final List<Exercise> dummyExercises = [
   Exercise(
     id: 'E003',
     nombre: 'Trotar en el Sitio',
-    descripcion: 'Aumento de la frecuencia cardíaca y calentamiento.',
+    descripcion:
+        'Aumento de la frecuencia cardíaca y calentamiento.',
     referenceVideo: 'url_video_3',
     durationSeconds: 120,
     repeticiones: 1,
     series: 1,
     toleranceDegrees: 0,
     objetiveAngles: 'N/A',
-    referenceImage: 'https://placehold.co/600x400/00acc1/ffffff?text=Cardio',
+    referenceImage:
+        'https://placehold.co/600x400/00acc1/ffffff?text=Cardio',
     completed: false,
     type: TypeExercise.Cardio,
   ),
   Exercise(
     id: 'E004',
     nombre: 'Parado en una pierna',
-    descripcion: 'Mejora la estabilidad y el equilibrio monopodal.',
+    descripcion:
+        'Mejora la estabilidad y el equilibrio monopodal.',
     referenceVideo: 'url_video_4',
     durationSeconds: 60,
     repeticiones: 1,
@@ -144,7 +154,9 @@ class ExercisesView extends StatelessWidget {
       elevation: 2,
       margin: const EdgeInsets.only(top: 10),
       color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: ListView.separated(
         shrinkWrap: true,
         physics: const ClampingScrollPhysics(),
@@ -168,7 +180,10 @@ class ExercisesView extends StatelessWidget {
             ),
             title: Text(
               exercise.nombre,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,14 +212,19 @@ class ExercisesView extends StatelessWidget {
                 // Información resumida
                 Text(
                   'Reps: ${exercise.repeticiones} • Series: ${exercise.series}${exercise.durationSeconds > 0 ? ' • ${exercise.durationSeconds}s' : ''}',
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade700,
+                  ),
                 ),
               ],
             ),
-            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+            trailing: const Icon(
+              Icons.chevron_right,
+              color: Colors.grey,
+            ),
             onTap: () {
-              // Navegar a la vista de detalles del ejercicio
-              print('Ver detalles del ejercicio: ${exercise.nombre}');
+              ExerciseDetailModal.show(context, exercise);
             },
           );
         },

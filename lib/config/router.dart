@@ -20,7 +20,10 @@ final appRouter = GoRouter(
         return const RoutineAssignmentScreen();
       },
     ),
-    GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => const LoginScreen(),
+    ),
     // RUTA 1: Pacientes
     GoRoute(
       path: '/laptop-feedback',
