@@ -33,11 +33,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router( // .router es la clave
+    return MaterialApp.router(
+      // .router es la clave
       routerConfig: appRouter, // Tu config de go_router
       title: 'Fisioterapia App',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.teal),
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.lightBlueAccent,
+      ),
     );
   }
 }
