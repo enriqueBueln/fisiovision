@@ -84,8 +84,12 @@ class Ejercicio {
       'precautions': precautions,
       'reference_image': reference_image,
       'reference_video': reference_video,
-      'isActive': isActive,
     };
+  }
+
+  @override
+  toString(){
+    return toJson().toString();
   }
 
   // FUNCIÓN CLAVE PARA LA TRANSFORMACIÓN

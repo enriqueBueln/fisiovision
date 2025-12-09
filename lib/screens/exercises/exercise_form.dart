@@ -16,8 +16,10 @@ class ExerciseFormScreen extends ConsumerStatefulWidget {
 }
 
 class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
+  String? _selectedJoint;
+  String? _selectedSide;
   final _formKey = GlobalKey<FormState>();
-  final Map<String, int> _angulosMap = {};
+  final Map<String, Map<String, int>> _angulosMap = {};
 
   // Controladores temporales para agregar un nuevo ángulo
   final _tempJointCtrl = TextEditingController();
@@ -79,19 +81,17 @@ class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
   }
 
   void _agregarAngulo() {
-    final joint = _tempJointCtrl.text.trim();
-    final angleStr = _tempAngleCtrl.text.trim();
+    if (_selectedJoint == null || _selectedSide == null) return;
 
-    if (joint.isNotEmpty && angleStr.isNotEmpty) {
-      final angle = int.tryParse(angleStr);
-      if (angle != null) {
-        setState(() {
-          _angulosMap[joint] = angle;
-        });
-        _tempJointCtrl.clear();
-        _tempAngleCtrl.clear();
-      }
-    }
+    final angle = int.tryParse(_tempAngleCtrl.text);
+    if (angle == null) return;
+
+    setState(() {
+      _angulosMap[_selectedJoint!] ??= {};
+      _angulosMap[_selectedJoint!]![_selectedSide!] = angle;
+    });
+
+    _tempAngleCtrl.clear();
   }
 
   Future<void> _submitForm() async {
@@ -103,12 +103,19 @@ class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
       final nuevoEjercicioData = Ejercicio(
         id: 0,
         name: _nombreCtrl.text.trim(),
-        type: _tipoEjercicio.name,
+        type: _tipoEjercicio.name.toLowerCase(),
+        description: _descripcionCtrl.text.trim(),
         duration_seconds: int.tryParse(_duracionCtrl.text) ?? 0,
         repetitions: int.tryParse(_repeticionesCtrl.text) ?? 0,
         series: int.tryParse(_seriesCtrl.text) ?? 0,
-        objective_angles: jsonEncode(_angulosMap),
+        objective_angles: _angulosMap.isNotEmpty
+            ? json.encode(_angulosMap)
+            : '',
         tolerance_degrees: (int.tryParse(_toleranciaCtrl.text) ?? 0).toDouble(),
+        instructions: _instruccionesCtrl.text.trim(),
+        precautions: _precaucionesCtrl.text.trim(),
+        reference_image: "asdasd",
+        reference_video: "asdasd",
       );
 
       print('Datos listos para enviar al backend: $nuevoEjercicioData');
@@ -144,6 +151,7 @@ class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
 
     return Scaffold(
       backgroundColor: isDarkMode
@@ -382,23 +390,71 @@ class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
 
               const SizedBox(height: 24),
 
-              // SECCIÓN: Ángulos Objetivo
               _SectionCard(
                 emoji: '📐',
                 title: 'Ángulos Objetivo (Visión Artificial)',
                 children: [
                   Row(
                     children: [
+                      // --- SELECT ARTICULACIÓN ---
                       Expanded(
                         flex: 2,
-                        child: _CustomTextField(
-                          controller: _tempJointCtrl,
-                          label: 'Articulación',
-                          icon: Icons.accessibility_new_outlined,
-                          hint: 'codo_der',
+                        child: DropdownButtonFormField<String>(
+                          value: _selectedJoint,
+                          decoration: const InputDecoration(
+                            labelText: 'Articulación',
+                            prefixIcon: Icon(Icons.accessibility_new_outlined),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'cadera',
+                              child: Text('Cadera'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'rodilla',
+                              child: Text('Rodilla'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'codo',
+                              child: Text('Codo'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'hombro',
+                              child: Text('Hombro'),
+                            ),
+                          ],
+                          onChanged: (v) => setState(() => _selectedJoint = v),
                         ),
                       ),
+
                       const SizedBox(width: 10),
+
+                      // --- SELECT LADO ---
+                      Expanded(
+                        flex: 2,
+                        child: DropdownButtonFormField<String>(
+                          value: _selectedSide,
+                          decoration: const InputDecoration(
+                            labelText: 'Lado',
+                            prefixIcon: Icon(Icons.swap_horiz),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'izquierdo',
+                              child: Text('Izquierdo'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'derecho',
+                              child: Text('Derecho'),
+                            ),
+                          ],
+                          onChanged: (v) => setState(() => _selectedSide = v),
+                        ),
+                      ),
+
+                      const SizedBox(width: 10),
+
+                      // --- GRADOS ---
                       Expanded(
                         child: _CustomTextField(
                           controller: _tempAngleCtrl,
@@ -408,7 +464,10 @@ class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
                           keyboardType: TextInputType.number,
                         ),
                       ),
+
                       const SizedBox(width: 8),
+
+                      // --- BOTÓN AGREGAR ---
                       Container(
                         decoration: BoxDecoration(
                           color: _getTypeColor(_tipoEjercicio),
@@ -422,33 +481,35 @@ class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
                       ),
                     ],
                   ),
+
                   if (_angulosMap.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: _angulosMap.entries.map((entry) {
+                        final articulacion = entry.key;
+                        final lados =
+                            entry.value; // { "izquierdo": 10, "derecho": 5 }
+
                         return Chip(
                           backgroundColor: isDarkMode
                               ? const Color(0xFF0F1629)
                               : const Color(0xFFF8F9FA),
                           label: Text(
-                            '${entry.key}: ${entry.value}°',
+                            '$articulacion — izq: ${lados["izquierdo"] ?? "-"}° / der: ${lados["derecho"] ?? "-"}°',
                             style: TextStyle(
                               color: isDarkMode ? Colors.white : Colors.black87,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          deleteIcon: Icon(
+                          deleteIcon: const Icon(
                             Icons.close,
                             size: 18,
-                            color: const Color(0xFFE53935),
+                            color: Color(0xFFE53935),
                           ),
-                          onDeleted: () {
-                            setState(() {
-                              _angulosMap.remove(entry.key);
-                            });
-                          },
+                          onDeleted: () =>
+                              setState(() => _angulosMap.remove(articulacion)),
                         );
                       }).toList(),
                     ),
