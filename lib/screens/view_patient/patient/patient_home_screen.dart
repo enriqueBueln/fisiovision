@@ -2,8 +2,11 @@ import 'package:fisiovision/providers/patients_provider.dart';
 import 'package:fisiovision/widgets/scaffold_side_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart'; // 👈 Agrega esta línea
-import 'package:fisiovision/models/patients_model.dart'; // 👈 También necesitas importar el modelo
+import 'package:provider/provider.dart';
+import 'package:fisiovision/models/patients_model.dart';
+import 'package:fisiovision/models/sesion_model.dart';
+import 'package:fisiovision/services/sesion_service.dart';
+import 'package:fisiovision/services/auth_service.dart';
 
 class PatientHomeScreen extends StatelessWidget {
   const PatientHomeScreen({super.key});
@@ -263,7 +266,7 @@ class AssignedExercisesView extends StatelessWidget {
   }
 }
 
-class _ExerciseCard extends StatelessWidget {
+class _ExerciseCard extends StatefulWidget {
   final AssignedExerciseModel exercise;
   final bool isDarkMode;
 
@@ -273,17 +276,111 @@ class _ExerciseCard extends StatelessWidget {
   });
 
   @override
+  State<_ExerciseCard> createState() => _ExerciseCardState();
+}
+
+class _ExerciseCardState extends State<_ExerciseCard> {
+  bool _isStarting = false;
+
+  Future<void> _handleStartExercise(BuildContext context) async {
+    setState(() => _isStarting = true);
+
+    try {
+      final sesionService = SesionService();
+      final authService = AuthService();
+      
+      // Obtener el ID del paciente desde el token JWT
+      final userId = await authService.getUserIdFromToken();
+      
+      if (userId == null) {
+        throw Exception('No se pudo obtener el ID del usuario. Por favor, inicia sesión nuevamente.');
+      }
+
+      final sesionCreate = SesionCreate(
+        idPaciente: userId,
+        idEjercicio: widget.exercise.ejercicio.id,
+        dateSpecified: DateTime.now(),
+      );
+
+      final sesion = await sesionService.startSesion(sesionCreate);
+
+      if (!context.mounted) return;
+
+      _showSuccessAndNavigate(context, sesion);
+    } catch (e) {
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(
+                Icons.error_outline,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Error: ${e.toString().replaceAll('Exception: ', '')}',
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFFE53935),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isStarting = false);
+      }
+    }
+  }
+
+  void _showSuccessAndNavigate(BuildContext context, SesionResponse sesion) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text('Sesión iniciada: ${sesion.ejercicio?.name ?? "Ejercicio"}'),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF43A047),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+
+    // Navegar a la pantalla de conexión, pasando la sesión
+    context.push('/connect-device', extra: sesion);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isCompleted = !exercise.isActive;
+    final isCompleted = !widget.exercise.isActive;
 
     return Container(
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1A1F3A) : Colors.white,
+        color: widget.isDarkMode ? const Color(0xFF1A1F3A) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isCompleted
               ? const Color(0xFF10B981).withOpacity(0.3)
-              : (isDarkMode
+              : (widget.isDarkMode
                     ? Colors.white.withOpacity(0.05)
                     : Colors.grey.withOpacity(0.15)),
           width: isCompleted ? 2 : 1,
@@ -328,15 +425,15 @@ class _ExerciseCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    exercise.ejercicio.name,
+                    widget.exercise.ejercicio.name,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: isCompleted
-                          ? (isDarkMode
+                          ? (widget.isDarkMode
                                 ? const Color(0xFF94A3B8)
                                 : const Color(0xFF64748B))
-                          : (isDarkMode
+                          : (widget.isDarkMode
                                 ? Colors.white
                                 : const Color(0xFF1E293B)),
                       decoration: isCompleted
@@ -350,16 +447,16 @@ class _ExerciseCard extends StatelessWidget {
                       Icon(
                         Icons.repeat,
                         size: 14,
-                        color: isDarkMode
+                        color: widget.isDarkMode
                             ? const Color(0xFF64748B)
                             : const Color(0xFF94A3B8),
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '${exercise.ejercicio.series} series × ${exercise.ejercicio.repetitions} reps',
+                        '${widget.exercise.ejercicio.series} series × ${widget.exercise.ejercicio.repetitions} reps',
                         style: TextStyle(
                           fontSize: 13,
-                          color: isDarkMode
+                          color: widget.isDarkMode
                               ? const Color(0xFF64748B)
                               : const Color(0xFF94A3B8),
                         ),
@@ -373,7 +470,7 @@ class _ExerciseCard extends StatelessWidget {
             // Botón de acción
             if (!isCompleted)
               ElevatedButton(
-                onPressed: () => context.go('/connect-device'),
+                onPressed: _isStarting ? null : () => _handleStartExercise(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF3B82F6),
                   foregroundColor: Colors.white,
@@ -385,14 +482,26 @@ class _ExerciseCard extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
+                  disabledBackgroundColor: widget.isDarkMode
+                      ? Colors.grey[800]
+                      : Colors.grey[300],
                 ),
-                child: const Text(
-                  'Iniciar',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: _isStarting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'Iniciar',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
               )
             else
               const Icon(
