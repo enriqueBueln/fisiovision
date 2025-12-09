@@ -23,7 +23,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
 
   // Estado
   DateTime? _fechaNacimiento = DateTime(2000, 1, 1);
-  String _genero = 'Masculino';
+  String _genero = 'masculino';
   String _riesgo = 'Bajo';
   bool _isLoading = false;
 
@@ -109,14 +109,14 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
 
       final nuevoPacienteData = Paciente(
         id: 0, // El backend asignará el ID
-        nombre: _nombreCtrl.text.trim(),
-        apellido: '', // Podrías separar el apellido si lo deseas
+        name: _nombreCtrl.text.trim(),
+        second_name: 'Perez', // Podrías separar el apellido si lo deseas
         email: _emailCtrl.text.trim(),
-        fechaNacimiento: _fechaNacimiento!,
-        genero: _genero,
+        birth_date: _fechaNacimiento!,
+        gender: _genero,
         idUsuario: 1, // Asumimos un usuario fijo por ahora
-        direccion: _telefonoCtrl.text.trim(),
-        notas: _alergiasCtrl.text.trim(),
+        address: _telefonoCtrl.text.trim(),
+        notes: _alergiasCtrl.text.trim(),
       );
 
       print('Datos listos para enviar al backend: $nuevoPacienteData');
@@ -368,9 +368,9 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                               child: _RadioOption(
                                 label: 'Masculino',
                                 emoji: '👨',
-                                selected: _genero == 'Masculino',
+                                selected: _genero == 'masculino',
                                 onTap: () =>
-                                    setState(() => _genero = 'Masculino'),
+                                    setState(() => _genero = 'masculino'),
                               ),
                             ),
                             const SizedBox(width: 12),

@@ -56,7 +56,7 @@ class RoutineNotifier extends StateNotifier<RoutineState> {
   // Lógica para guardar la rutina y resetear el estado
   void saveRoutine() {
     print(
-      "Guardando rutina para ${state.selectedPatient?.nombre} con ${state.exercises.length} ejercicios.",
+      "Guardando rutina para ${state.selectedPatient?.name} con ${state.exercises.length} ejercicios.",
     );
     // Aquí iría la llamada a tu API
     state = RoutineState(); // Resetear
@@ -71,5 +71,5 @@ class RoutineNotifier extends StateNotifier<RoutineState> {
 
 // Datos de ejemplo
 final List<Paciente> dummyPatients = [
-  Paciente(id: 1, nombre: 'Enrique', apellido: 'Buelna', email: 'enrique@gmail.com', fechaNacimiento: DateTime.parse('1900-01-01'), genero: 'M', idUsuario: 1)
+  Paciente(id: 1, name: 'Enrique', second_name: 'Buelna', email: 'enrique@gmail.com', birth_date: DateTime.parse('1900-01-01'), gender: 'M', idUsuario: 1)
 ];

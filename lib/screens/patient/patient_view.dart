@@ -1,381 +1,258 @@
+import 'package:fisiovision/models/paciente_model.dart';
+import 'package:fisiovision/providers/paciente_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class PatientsView extends StatelessWidget {
+class PatientsView extends ConsumerWidget {
   const PatientsView({super.key});
 
-  // Datos de ejemplo
-  List<Map<String, dynamic>> get _pacientes => [
-    {
-      'id': 1,
-      'nombre': 'Carlos Méndez',
-      'edad': 34,
-      'genero': 'Masculino',
-      'lesion': 'Lesión de LCA',
-      'riesgo': 'Alto',
-      'telefono': '667-123-4567',
-      'email': 'carlos.mendez@email.com',
-      'fechaIngreso': '15/11/2024',
-      'sesiones': 12,
-      'progreso': 65,
-    },
-    {
-      'id': 2,
-      'nombre': 'María González',
-      'edad': 28,
-      'genero': 'Femenino',
-      'lesion': 'Esguince de tobillo',
-      'riesgo': 'Bajo',
-      'telefono': '667-234-5678',
-      'email': 'maria.gonzalez@email.com',
-      'fechaIngreso': '20/11/2024',
-      'sesiones': 8,
-      'progreso': 80,
-    },
-    {
-      'id': 3,
-      'nombre': 'Roberto Silva',
-      'edad': 45,
-      'genero': 'Masculino',
-      'lesion': 'Tendinitis rotuliana',
-      'riesgo': 'Medio',
-      'telefono': '667-345-6789',
-      'email': 'roberto.silva@email.com',
-      'fechaIngreso': '10/11/2024',
-      'sesiones': 15,
-      'progreso': 45,
-    },
-    {
-      'id': 4,
-      'nombre': 'Ana Martínez',
-      'edad': 52,
-      'genero': 'Femenino',
-      'lesion': 'Fractura de muñeca',
-      'riesgo': 'Alto',
-      'telefono': '667-456-7890',
-      'email': 'ana.martinez@email.com',
-      'fechaIngreso': '05/11/2024',
-      'sesiones': 18,
-      'progreso': 30,
-    },
-    {
-      'id': 5,
-      'nombre': 'Diego Ramírez',
-      'edad': 31,
-      'genero': 'Masculino',
-      'lesion': 'Lumbalgia crónica',
-      'riesgo': 'Medio',
-      'telefono': '667-567-8901',
-      'email': 'diego.ramirez@email.com',
-      'fechaIngreso': '25/10/2024',
-      'sesiones': 20,
-      'progreso': 70,
-    },
-    {
-      'id': 6,
-      'nombre': 'Laura Hernández',
-      'edad': 39,
-      'genero': 'Femenino',
-      'lesion': 'Síndrome del túnel carpiano',
-      'riesgo': 'Bajo',
-      'telefono': '667-678-9012',
-      'email': 'laura.hernandez@email.com',
-      'fechaIngreso': '30/11/2024',
-      'sesiones': 6,
-      'progreso': 90,
-    },
-    {
-      'id': 7,
-      'nombre': 'Pedro Sánchez',
-      'edad': 41,
-      'genero': 'Masculino',
-      'lesion': 'Rotura del manguito rotador',
-      'riesgo': 'Alto',
-      'telefono': '667-789-0123',
-      'email': 'pedro.sanchez@email.com',
-      'fechaIngreso': '12/11/2024',
-      'sesiones': 14,
-      'progreso': 50,
-    },
-    {
-      'id': 8,
-      'nombre': 'Sofia López',
-      'edad': 26,
-      'genero': 'Femenino',
-      'lesion': 'Fascitis plantar',
-      'riesgo': 'Bajo',
-      'telefono': '667-890-1234',
-      'email': 'sofia.lopez@email.com',
-      'fechaIngreso': '28/11/2024',
-      'sesiones': 5,
-      'progreso': 85,
-    },
-  ];
-
-  void _showPatientModal(
-    BuildContext context,
-    Map<String, dynamic> paciente,
-  ) {
+  // Función auxiliar para mostrar el modal (Ahora recibe un objeto Paciente)
+  void _showPatientModal(BuildContext context, Paciente paciente) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) =>
-          _PatientDetailModal(paciente: paciente),
+      builder: (context) => _PatientDetailModal(paciente: paciente),
     );
   }
 
   @override
-  Widget build(BuildContext context) {
-    final isDarkMode =
-        Theme.of(context).brightness == Brightness.dark;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
+    // 1. ESCUCHAMOS EL PROVIDER
+    final asyncPacientes = ref.watch(pacientesProvider);
 
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.all(16),
-      color: isDarkMode ? const Color(0xFF1A1F3A) : Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isDarkMode
-              ? Colors.white.withOpacity(0.05)
-              : Colors.grey.withOpacity(0.15),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header con emoji
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                const Text('👥', style: TextStyle(fontSize: 24)),
-                const SizedBox(width: 12),
-                Text(
-                  'Lista de Pacientes',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: isDarkMode
-                        ? Colors.white
-                        : Colors.black87,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(
-                      0xFF1E88E5,
-                    ).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${_pacientes.length} pacientes',
-                    style: const TextStyle(
-                      color: Color(0xFF1E88E5),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
+    // 2. USAMOS .when PARA MANEJAR ESTADOS
+    return asyncPacientes.when(
+      loading: () => const Center(child: Padding(
+        padding: EdgeInsets.all(20.0),
+        child: CircularProgressIndicator(),
+      )),
+      error: (err, stack) => Center(child: Text('Error: $err')),
+      data: (pacientes) {
+        
+        // SI NO HAY PACIENTES
+        if (pacientes.isEmpty) {
+          return const Center(child: Padding(
+            padding: EdgeInsets.all(20),
+            child: Text("No hay pacientes registrados"),
+          ));
+        }
+
+        // 3. UI CON DATOS REALES
+        return Card(
+          elevation: 0,
+          margin: const EdgeInsets.all(16),
+          color: isDarkMode ? const Color(0xFF1A1F3A) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey.withOpacity(0.15),
+              width: 1,
             ),
           ),
-          const Divider(height: 1),
-
-          // Lista de pacientes
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: _pacientes.length,
-            separatorBuilder: (c, i) => Divider(
-              height: 1,
-              indent: 20,
-              endIndent: 20,
-              color: isDarkMode
-                  ? Colors.white.withOpacity(0.05)
-                  : Colors.grey.withOpacity(0.1),
-            ),
-            itemBuilder: (context, index) {
-              final paciente = _pacientes[index];
-              final riesgo = paciente['riesgo'] as String;
-
-              return ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-                leading: CircleAvatar(
-                  radius: 24,
-                  backgroundColor: _getRiskColor(
-                    riesgo,
-                  ).withOpacity(0.15),
-                  child: Text(
-                    paciente['nombre'].toString().substring(0, 1),
-                    style: TextStyle(
-                      color: _getRiskColor(riesgo),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    const Text('👥', style: TextStyle(fontSize: 24)),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Lista de Pacientes',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
                     ),
-                  ),
-                ),
-                title: Text(
-                  paciente['nombre'],
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                    color: isDarkMode
-                        ? Colors.white
-                        : Colors.black87,
-                  ),
-                ),
-                subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.healing_outlined,
-                        size: 14,
-                        color: isDarkMode
-                            ? Colors.grey[400]
-                            : Colors.grey[600],
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E88E5).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          paciente['lesion'],
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: isDarkMode
-                                ? Colors.grey[400]
-                                : Colors.grey[600],
+                      child: Text(
+                        '${pacientes.length} pacientes', // Dato Real
+                        style: const TextStyle(
+                          color: Color(0xFF1E88E5),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+
+              // Lista de pacientes REALES
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: pacientes.length,
+                separatorBuilder: (c, i) => Divider(
+                  height: 1,
+                  indent: 20,
+                  endIndent: 20,
+                  color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey.withOpacity(0.1),
+                ),
+                itemBuilder: (context, index) {
+                  final paciente = pacientes[index];
+                  
+                  // --- MAPEO DE DATOS FALTANTES ---
+                  // Como tu DB no tiene "riesgo" ni "lesión" en tabla Paciente, 
+                  // simulamos o usamos 'notes' para que no se rompa la UI.
+                  const riesgoSimulado = 'Bajo'; // Default por ahora
+                  final lesionTexto = paciente.notes != null && paciente.notes!.isNotEmpty 
+                      ? paciente.notes! 
+                      : 'Sin diagnóstico esp.';
+
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    leading: CircleAvatar(
+                      radius: 24,
+                      backgroundColor: _getRiskColor(riesgoSimulado).withOpacity(0.15),
+                      child: Text(
+                        paciente.name.isNotEmpty ? paciente.name.substring(0, 1) : '?',
+                        style: TextStyle(
+                          color: _getRiskColor(riesgoSimulado),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      paciente.nombreCompleto, // Usamos tu getter del Modelo
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.healing_outlined,
+                            size: 14,
+                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getRiskColor(
-                            riesgo,
-                          ).withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              _getRiskEmoji(riesgo),
-                              style: const TextStyle(fontSize: 10),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              riesgo,
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              lesionTexto, // Mostramos las notas aquí
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: _getRiskColor(riesgo),
+                                fontSize: 13,
+                                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Chip de riesgo simulado
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: _getRiskColor(riesgoSimulado).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(_getRiskEmoji(riesgoSimulado), style: const TextStyle(fontSize: 10)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  riesgoSimulado,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: _getRiskColor(riesgoSimulado),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                trailing: Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: isDarkMode
-                      ? Colors.grey[600]
-                      : Colors.grey[400],
-                ),
-                onTap: () => _showPatientModal(context, paciente),
-                hoverColor: const Color(
-                  0xFF1E88E5,
-                ).withOpacity(0.05),
-              );
-            },
+                    ),
+                    trailing: Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: isDarkMode ? Colors.grey[600] : Colors.grey[400],
+                    ),
+                    onTap: () => _showPatientModal(context, paciente), // Pasamos el objeto real
+                  );
+                },
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
+  // Helpers de color (Mantenidos igual)
   Color _getRiskColor(String riesgo) {
     switch (riesgo) {
-      case 'Alto':
-        return const Color(0xFFE53935);
-      case 'Medio':
-        return const Color(0xFFFB8C00);
-      case 'Bajo':
-        return const Color(0xFF43A047);
-      default:
-        return Colors.grey;
+      case 'Alto': return const Color(0xFFE53935);
+      case 'Medio': return const Color(0xFFFB8C00);
+      case 'Bajo': return const Color(0xFF43A047);
+      default: return Colors.grey;
     }
   }
 
   String _getRiskEmoji(String riesgo) {
     switch (riesgo) {
-      case 'Alto':
-        return '🔴';
-      case 'Medio':
-        return '🟡';
-      case 'Bajo':
-        return '🟢';
-      default:
-        return '⚪';
+      case 'Alto': return '🔴';
+      case 'Medio': return '🟡';
+      case 'Bajo': return '🟢';
+      default: return '⚪';
     }
   }
 }
-
 // ============================================================================
 // PATIENT DETAIL MODAL
 // ============================================================================
 class _PatientDetailModal extends StatelessWidget {
-  final Map<String, dynamic> paciente;
+  // Cambio clave: Recibe tu modelo, no un Map
+  final Paciente paciente; 
 
   const _PatientDetailModal({required this.paciente});
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode =
-        Theme.of(context).brightness == Brightness.dark;
-    final progreso = paciente['progreso'] as int;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
+    final String lesion = paciente.notes ?? "Sin notas registradas";
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1A1F3A) : Colors.white,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
           // Handle bar
           Container(
             margin: const EdgeInsets.only(top: 12, bottom: 8),
-            width: 40,
-            height: 4,
+            width: 40, height: 4,
             decoration: BoxDecoration(
-              color: isDarkMode
-                  ? Colors.white24
-                  : Colors.grey[300],
+              color: isDarkMode ? Colors.white24 : Colors.grey[300],
               borderRadius: BorderRadius.circular(2),
             ),
           ),
 
-          // Header con avatar grande
+          // Header Avatar
           Container(
             padding: const EdgeInsets.all(24),
             decoration: const BoxDecoration(
@@ -384,9 +261,7 @@ class _PatientDetailModal extends StatelessWidget {
                 end: Alignment.bottomRight,
                 colors: [Color(0xFF1E88E5), Color(0xFF1565C0)],
               ),
-              borderRadius: BorderRadius.vertical(
-                bottom: Radius.circular(24),
-              ),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
             ),
             child: Column(
               children: [
@@ -394,7 +269,7 @@ class _PatientDetailModal extends StatelessWidget {
                   radius: 50,
                   backgroundColor: Colors.white,
                   child: Text(
-                    paciente['nombre'].toString().substring(0, 1),
+                    paciente.name.isNotEmpty ? paciente.name.substring(0, 1) : '?',
                     style: const TextStyle(
                       color: Color(0xFF1E88E5),
                       fontWeight: FontWeight.bold,
@@ -404,7 +279,7 @@ class _PatientDetailModal extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  paciente['nombre'],
+                  paciente.nombreCompleto,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 24,
@@ -413,7 +288,7 @@ class _PatientDetailModal extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${paciente['edad']} años • ${paciente['genero']}',
+                  '${paciente.edad} años • ${paciente.gender}',
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.9),
                     fontSize: 15,
@@ -423,207 +298,57 @@ class _PatientDetailModal extends StatelessWidget {
             ),
           ),
 
-          // Contenido scrolleable
+          // Contenido
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Diagnóstico
                   _SectionCard(
-                    icon: Icons.healing,
-                    emoji: '🏥',
-                    title: 'Diagnóstico',
+                    icon: Icons.healing, emoji: '🏥', title: 'Información Clínica', // Cambio nombre
                     children: [
                       _InfoRow(
-                        label: 'Lesión',
-                        value: paciente['lesion'],
+                        label: 'Notas / Lesión',
+                        value: lesion,
                         icon: Icons.medical_services_outlined,
                       ),
                       const SizedBox(height: 12),
                       _InfoRow(
-                        label: 'Nivel de riesgo',
-                        value: paciente['riesgo'],
-                        icon: Icons.warning_amber_outlined,
-                        valueColor: _getRiskColor(
-                          paciente['riesgo'],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _InfoRow(
-                        label: 'Fecha de ingreso',
-                        value: paciente['fechaIngreso'],
+                        label: 'Fecha de ingreso (Registro)',
+                        // No tenemos fecha ingreso, usamos birth_date o calculamos
+                        value: "Registrado recientemente", 
                         icon: Icons.calendar_today_outlined,
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 20),
 
-                  // Progreso
+                  // Sección de Progreso (Simulada para mantener estilo)
                   _SectionCard(
-                    icon: Icons.trending_up,
-                    emoji: '📈',
-                    title: 'Progreso de rehabilitación',
+                    icon: Icons.trending_up, emoji: '📈', title: 'Progreso (Pendiente)',
                     children: [
-                      Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Sesiones completadas',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: isDarkMode
-                                  ? Colors.grey[400]
-                                  : Colors.grey[600],
-                            ),
-                          ),
-                          Text(
-                            '${paciente['sesiones']} sesiones',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: isDarkMode
-                                  ? Colors.white
-                                  : Colors.black87,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Progreso general',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: isDarkMode
-                                      ? Colors.white
-                                      : Colors.black87,
-                                ),
-                              ),
-                              Text(
-                                '$progreso%',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF1E88E5),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: LinearProgressIndicator(
-                              value: progreso / 100,
-                              minHeight: 10,
-                              backgroundColor: isDarkMode
-                                  ? Colors.white.withOpacity(0.1)
-                                  : Colors.grey[200],
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(
-                                    progreso >= 70
-                                        ? const Color(0xFF43A047)
-                                        : progreso >= 40
-                                        ? const Color(0xFF1E88E5)
-                                        : const Color(0xFFFB8C00),
-                                  ),
-                            ),
-                          ),
-                        ],
-                      ),
+                       const Text("Esta sección se activará cuando el paciente realice sesiones.", style: TextStyle(color: Colors.grey)),
+                       // Puedes dejar el resto de tu UI original aquí si quieres que se vea "vacía" pero bonita
                     ],
                   ),
 
                   const SizedBox(height: 20),
 
-                  // Datos de contacto
+                  // Contacto
                   _SectionCard(
-                    icon: Icons.contact_phone,
-                    emoji: '📞',
-                    title: 'Información de contacto',
+                    icon: Icons.contact_phone, emoji: '📞', title: 'Contacto',
                     children: [
                       _InfoRow(
-                        label: 'Teléfono',
-                        value: paciente['telefono'],
-                        icon: Icons.phone_outlined,
+                        label: 'Email',
+                        value: paciente.email,
+                        icon: Icons.email_outlined,
                       ),
                       const SizedBox(height: 12),
                       _InfoRow(
-                        label: 'Email',
-                        value: paciente['email'],
-                        icon: Icons.email_outlined,
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Botones de acción
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            // Acción de ver historial
-                          },
-                          icon: const Icon(
-                            Icons.history,
-                            size: 18,
-                          ),
-                          label: const Text('Historial'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 14,
-                            ),
-                            side: const BorderSide(
-                              color: Color(0xFF1E88E5),
-                            ),
-                            foregroundColor: const Color(
-                              0xFF1E88E5,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                12,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            // Acción de editar
-                          },
-                          icon: const Icon(Icons.edit, size: 18),
-                          label: const Text('Editar'),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 14,
-                            ),
-                            backgroundColor: const Color(
-                              0xFF1E88E5,
-                            ),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                12,
-                              ),
-                            ),
-                          ),
-                        ),
+                        label: 'Dirección',
+                        value: paciente.address ?? 'No registrada',
+                        icon: Icons.location_on_outlined,
                       ),
                     ],
                   ),
@@ -635,21 +360,7 @@ class _PatientDetailModal extends StatelessWidget {
       ),
     );
   }
-
-  Color _getRiskColor(String riesgo) {
-    switch (riesgo) {
-      case 'Alto':
-        return const Color(0xFFE53935);
-      case 'Medio':
-        return const Color(0xFFFB8C00);
-      case 'Bajo':
-        return const Color(0xFF43A047);
-      default:
-        return Colors.grey;
-    }
-  }
 }
-
 class _SectionCard extends StatelessWidget {
   final IconData icon;
   final String emoji;

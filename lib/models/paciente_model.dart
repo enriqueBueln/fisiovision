@@ -1,24 +1,24 @@
 class Paciente {
   final int? id; // En DB es bigint, en Dart int (64-bit)
-  final String nombre;
-  final String apellido; // second_name en DB
+  final String name;
+  final String second_name; // second_name en DB
   final String email;
-  final DateTime fechaNacimiento;
-  final String genero;
-  final String? direccion;
-  final String? notas;
+  final DateTime birth_date;
+  final String gender;
+  final String? address;
+  final String? notes;
   final int? idUsuario; // Relación con tabla Usuario
   final bool isActive;
 
   // Getter útil para la UI
-  String get nombreCompleto => '$nombre $apellido';
-  
+  String get nombreCompleto => '$name $second_name';
+
   // Calcular edad automáticamente
   int get edad {
     final now = DateTime.now();
-    int age = now.year - fechaNacimiento.year;
-    if (now.month < fechaNacimiento.month || 
-       (now.month == fechaNacimiento.month && now.day < fechaNacimiento.day)) {
+    int age = now.year - birth_date.year;
+    if (now.month < birth_date.month ||
+        (now.month == birth_date.month && now.day < birth_date.day)) {
       age--;
     }
     return age;
@@ -26,41 +26,42 @@ class Paciente {
 
   Paciente({
     required this.id,
-    required this.nombre,
-    required this.apellido,
+    required this.name,
+    required this.second_name,
     required this.email,
-    required this.fechaNacimiento,
-    required this.genero,
+    required this.birth_date,
+    required this.gender,
     required this.idUsuario,
-    this.direccion,
-    this.notas,
+    this.address,
+    this.notes,
     this.isActive = true,
   });
 
   factory Paciente.fromJson(Map<String, dynamic> json) {
     return Paciente(
-      id: json['id'], 
-      nombre: json['name'],         // DB column: name
-      apellido: json['second_name'], // DB column: second_name
+      id: json['id'],
+      name: json['name'], // DB column: name
+      second_name: json['second_name'], // DB column: second_name
       email: json['email'],
-      fechaNacimiento: DateTime.parse(json['birth_date']), // DB envía "YYYY-MM-DD"
-      genero: json['gender'],
-      direccion: json['address'],
-      notas: json['notes'],
+      birth_date: DateTime.parse(json['birth_date']), // DB envía "YYYY-MM-DD"
+      gender: json['gender'],
+      address: json['address'],
+      notes: json['notes'],
       idUsuario: json['id_user'],
       isActive: json['isActive'] ?? true,
     );
   }
 
+  
   Map<String, dynamic> toJson() {
     return {
-      'name': nombre,
-      'second_name': apellido,
+      'name': name,
+      'second_name': second_name,
       'email': email,
-      'birth_date': fechaNacimiento.toIso8601String(),
-      'gender': genero,
-      'address': direccion,
-      'notes': notas,
+      'birth_date': birth_date.toIso8601String(),
+      'gender': gender,
+      'address': address,
+      'notes': notes,
     };
   }
 }

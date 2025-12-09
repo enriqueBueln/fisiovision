@@ -384,7 +384,7 @@ class _PatientSelectionCard extends StatelessWidget {
                 children: [
                   Text(
                     isSelected
-                        ? selectedPatient!.nombre
+                        ? selectedPatient!.name
                         : 'Seleccionar Paciente',
                     style: TextStyle(
                       fontSize: 16,
@@ -512,7 +512,7 @@ class _PatientSelectionModal extends StatelessWidget {
                       ),
                     ),
                     title: Text(
-                      patient.nombre,
+                      patient.name,
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         color: isDarkMode

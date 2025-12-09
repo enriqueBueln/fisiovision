@@ -27,7 +27,7 @@ class HomeScreen extends ConsumerWidget {
             itemBuilder: (context, index) {
               final paciente = pacientes[index];
               return ListTile(
-                title: Text(paciente.nombre),
+                title: Text(paciente.name),
                 subtitle: Text(paciente.notas?? "Sin diagnóstico"),
                 onTap: () {
                   // Navegar a detalles o grabar video

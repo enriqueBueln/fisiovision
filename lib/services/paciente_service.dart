@@ -9,7 +9,13 @@ class PacienteService {
 
   // GET: Obtener pacientes
   Future<List<Paciente>> getPacientes() async {
-    final response = await http.get(Uri.parse('$baseUrl/pacientes'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/pacientes'),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${await getData('access_token')}",
+      },
+    );
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -24,11 +30,16 @@ class PacienteService {
   Future<void> addPaciente(Paciente paciente) async {
     String token = await getData('access_token');
     print('Token obtenido en addPaciente: $token');
-    await http.post(
+    print('Enviando paciente: ${paciente.toJson()}');
+    final response = await http.post(
       Uri.parse('$baseUrl/pacientes'),
       headers: {"Content-Type": "application/json", "Authorization": "Bearer $token"},
       body: json.encode(paciente.toJson()),
     );
+
+    if (response.statusCode != 201) {
+      throw Exception('Error al agregar paciente: ${response.body}');
+    }
   }
 }
 
