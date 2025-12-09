@@ -18,7 +18,8 @@ class Paciente {
     final now = DateTime.now();
     int age = now.year - birth_date.year;
     if (now.month < birth_date.month ||
-        (now.month == birth_date.month && now.day < birth_date.day)) {
+        (now.month == birth_date.month &&
+            now.day < birth_date.day)) {
       age--;
     }
     return age;
@@ -43,7 +44,9 @@ class Paciente {
       name: json['name'], // DB column: name
       second_name: json['second_name'], // DB column: second_name
       email: json['email'],
-      birth_date: DateTime.parse(json['birth_date']), // DB envía "YYYY-MM-DD"
+      birth_date: DateTime.parse(
+        json['birth_date'],
+      ), // DB envía "YYYY-MM-DD"
       gender: json['gender'],
       address: json['address'],
       notes: json['notes'],
@@ -52,7 +55,6 @@ class Paciente {
     );
   }
 
-  
   Map<String, dynamic> toJson() {
     return {
       'name': name,
