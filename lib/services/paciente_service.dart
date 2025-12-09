@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:riverpod/riverpod.dart';
 import '../models/paciente_model.dart';
 
-class ApiService {
+class PacienteService {
   final String baseUrl = "https://tu-api.com/api";
 
   // GET: Obtener pacientes
@@ -29,4 +29,4 @@ class ApiService {
   }
 }
 
-final apiServiceProvider = Provider((ref) => ApiService());
+final pacienteServiceProvider = Provider((ref) => PacienteService());
