@@ -5,12 +5,12 @@ import 'package:fisiovision/models/ejercicio_model.dart';
 // MODAL DE DETALLE DEL EJERCICIO - COMPONENTE INDEPENDIENTE
 // ============================================================================
 class ExerciseDetailModal extends StatelessWidget {
-  final Exercise exercise;
+  final Ejercicio exercise;
 
   const ExerciseDetailModal({super.key, required this.exercise});
 
   // Método estático para mostrar el modal fácilmente
-  static void show(BuildContext context, Exercise exercise) {
+  static void show(BuildContext context, Ejercicio exercise) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -20,41 +20,41 @@ class ExerciseDetailModal extends StatelessWidget {
     );
   }
 
-  Color _getTypeColor(TypeExercise type) {
+  Color _getTypeColor(TipoEjercicio type) {
     switch (type) {
-      case TypeExercise.Fuerza:
+      case TipoEjercicio.Fuerza:
         return const Color(0xFFE53935);
-      case TypeExercise.Cardio:
+      case TipoEjercicio.Cardio:
         return const Color(0xFF43A047);
-      case TypeExercise.Flexibilidad:
+      case TipoEjercicio.Flexibilidad:
         return const Color(0xFF1E88E5);
-      case TypeExercise.Equilibrio:
+      case TipoEjercicio.Equilibrio:
         return const Color(0xFF8E24AA);
     }
   }
 
-  String _getTypeText(TypeExercise type) {
+  String _getTypeText(TipoEjercicio type) {
     switch (type) {
-      case TypeExercise.Fuerza:
+      case TipoEjercicio.Fuerza:
         return 'Fuerza';
-      case TypeExercise.Cardio:
+      case TipoEjercicio.Cardio:
         return 'Cardio';
-      case TypeExercise.Flexibilidad:
+      case TipoEjercicio.Flexibilidad:
         return 'Flexibilidad';
-      case TypeExercise.Equilibrio:
+      case TipoEjercicio.Equilibrio:
         return 'Equilibrio';
     }
   }
 
-  String _getTypeEmoji(TypeExercise type) {
+  String _getTypeEmoji(TipoEjercicio type) {
     switch (type) {
-      case TypeExercise.Fuerza:
+      case TipoEjercicio.Fuerza:
         return '💪';
-      case TypeExercise.Cardio:
+      case TipoEjercicio.Cardio:
         return '🏃';
-      case TypeExercise.Flexibilidad:
+      case TipoEjercicio.Flexibilidad:
         return '🤸';
-      case TypeExercise.Equilibrio:
+      case TipoEjercicio.Equilibrio:
         return '⚖️';
     }
   }
@@ -63,7 +63,7 @@ class ExerciseDetailModal extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDarkMode =
         Theme.of(context).brightness == Brightness.dark;
-    final typeColor = _getTypeColor(exercise.type);
+    final typeColor = _getTypeColor(exercise.tipoEnum);
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
@@ -136,12 +136,12 @@ class ExerciseDetailModal extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              _getTypeEmoji(exercise.type),
+                              _getTypeEmoji(exercise.tipoEnum),
                               style: const TextStyle(fontSize: 14),
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              _getTypeText(exercise.type),
+                              _getTypeText(exercise.tipoEnum),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 13,
@@ -181,7 +181,7 @@ class ExerciseDetailModal extends StatelessWidget {
                     isDarkMode: isDarkMode,
                     children: [
                       Text(
-                        exercise.descripcion,
+                        exercise.descripcion ?? 'Sin descripción disponible.',
                         style: TextStyle(
                           fontSize: 15,
                           height: 1.5,
@@ -224,12 +224,12 @@ class ExerciseDetailModal extends StatelessWidget {
                           ),
                         ],
                       ),
-                      if (exercise.durationSeconds > 0) ...[
+                      if (exercise.duracionSegundos > 0) ...[
                         const SizedBox(height: 12),
                         _ParameterBox(
                           icon: Icons.timer_outlined,
                           label: 'Duración',
-                          value: '${exercise.durationSeconds}s',
+                          value: '${exercise.duracionSegundos}s',
                           color: const Color(0xFFFB8C00),
                           isDarkMode: isDarkMode,
                         ),
@@ -247,21 +247,21 @@ class ExerciseDetailModal extends StatelessWidget {
                     children: [
                       _InfoRow(
                         label: 'Ángulos objetivo',
-                        value: exercise.objetiveAngles,
+                        value: exercise.angulosObjetivo,
                         icon: Icons.architecture,
                         isDarkMode: isDarkMode,
                       ),
                       const SizedBox(height: 12),
                       _InfoRow(
                         label: 'Tolerancia',
-                        value: '±${exercise.toleranceDegrees}°',
+                        value: '±${exercise.toleranciaGrados }°',
                         icon: Icons.tune,
                         isDarkMode: isDarkMode,
                       ),
                       const SizedBox(height: 12),
                       _InfoRow(
                         label: 'ID del ejercicio',
-                        value: exercise.id,
+                        value: exercise.id.toString(),
                         icon: Icons.tag,
                         isDarkMode: isDarkMode,
                       ),
@@ -278,7 +278,7 @@ class ExerciseDetailModal extends StatelessWidget {
                           onPressed: () {
                             // Acción de ver video
                             print(
-                              'Ver video: ${exercise.referenceVideo}',
+                              'Ver video: ${exercise.videoReferencia}',
                             );
                           },
                           icon: const Icon(

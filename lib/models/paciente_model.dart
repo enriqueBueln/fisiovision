@@ -1,25 +1,69 @@
 class Paciente {
-  final String id;
+  final int id; // En DB es bigint, en Dart int (64-bit)
   final String nombre;
-  final String? diagnostico;
+  final String apellido; // second_name en DB
+  final String email;
+  final DateTime fechaNacimiento;
+  final String genero;
+  final String? direccion;
+  final String? notas;
+  final int idUsuario; // Relación con tabla Usuario
+  final bool isActive;
 
-  Paciente({required this.id, required this.nombre, this.diagnostico});
+  // Getter útil para la UI
+  String get nombreCompleto => '$nombre $apellido';
+  
+  // Calcular edad automáticamente
+  int get edad {
+    final now = DateTime.now();
+    int age = now.year - fechaNacimiento.year;
+    if (now.month < fechaNacimiento.month || 
+       (now.month == fechaNacimiento.month && now.day < fechaNacimiento.day)) {
+      age--;
+    }
+    return age;
+  }
 
-  // Factory constructor: Transforma el JSON del backend a Objeto Dart
+  Paciente({
+    required this.id,
+    required this.nombre,
+    required this.apellido,
+    required this.email,
+    required this.fechaNacimiento,
+    required this.genero,
+    required this.idUsuario,
+    this.direccion,
+    this.notas,
+    this.isActive = true,
+  });
+
   factory Paciente.fromJson(Map<String, dynamic> json) {
     return Paciente(
-      id: json['id'].toString(), // Asegurar que sea String
-      nombre: json['nombre'],
-      diagnostico: json['diagnostico'],
+      id: json['id'], 
+      nombre: json['name'],         // DB column: name
+      apellido: json['second_name'], // DB column: second_name
+      email: json['email'],
+      fechaNacimiento: DateTime.parse(json['birth_date']), // DB envía "YYYY-MM-DD"
+      genero: json['gender'],
+      direccion: json['address'],
+      notas: json['notes'],
+      idUsuario: json['id_user'],
+      isActive: json['isActive'] ?? true,
     );
   }
 
-  // Para enviar datos al backend (POST/PUT)
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'nombre': nombre,
-      'diagnostico': diagnostico,
+      'name': nombre,
+      'second_name': apellido,
+      'email': email,
+      'birth_date': fechaNacimiento.toIso8601String(),
+      'gender': genero,
+      'address': direccion,
+      'notes': notas,
+      'id_user': idUsuario,
+      'isActive': isActive,
     };
   }
 }

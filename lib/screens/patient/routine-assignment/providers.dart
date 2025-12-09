@@ -71,7 +71,5 @@ class RoutineNotifier extends StateNotifier<RoutineState> {
 
 // Datos de ejemplo
 final List<Paciente> dummyPatients = [
-  Paciente(id: 'P001', nombre: 'Elena Rodríguez'),
-  Paciente(id: 'P002', nombre: 'Carlos López'),
-  Paciente(id: 'P003', nombre: 'María García'),
+  Paciente(id: 1, nombre: 'Enrique', apellido: 'Buelna', email: 'enrique@gmail.com', fechaNacimiento: DateTime.parse('1900-01-01'), genero: 'M', idUsuario: 1)
 ];

@@ -5,7 +5,7 @@ import '../services/paciente_service.dart';
 
 // 1. EL NOTIFIER: Controla la lógica
 class PacientesNotifier extends StateNotifier<AsyncValue<List<Paciente>>> {
-  final ApiService _apiService;
+  final PacienteService _apiService;
 
   // Iniciamos con "loading" (AsyncValue.loading())
   PacientesNotifier(this._apiService) : super(const AsyncValue.loading()) {
@@ -35,6 +35,6 @@ class PacientesNotifier extends StateNotifier<AsyncValue<List<Paciente>>> {
 final pacientesProvider =
     StateNotifierProvider<PacientesNotifier, AsyncValue<List<Paciente>>>((ref) {
       // Leemos el servicio del paso anterior
-      final apiService = ref.watch(apiServiceProvider);
+      final apiService = ref.watch(pacienteServiceProvider);
       return PacientesNotifier(apiService);
     });

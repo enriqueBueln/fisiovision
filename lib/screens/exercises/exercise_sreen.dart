@@ -10,13 +10,11 @@ class ExercisesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scaffoldKey =
-        GlobalKey<ScaffoldState>(); // Necesitas una key local
+    final scaffoldKey = GlobalKey<ScaffoldState>(); // Necesitas una key local
 
     return ScaffoldSideMenu(
       title: "Biblioteca de Ejercicios",
-      subtitle:
-          "Crea, edita y gestiona las rutinas de rehabilitación.",
+      subtitle: "Crea, edita y gestiona las rutinas de rehabilitación.",
 
       buttonText: "Crear Nuevo Ejercicio",
       buttonIcon: const Icon(Icons.add),
@@ -24,9 +22,7 @@ class ExercisesScreen extends StatelessWidget {
         context.go('/ejercicio/nuevo');
       },
 
-      drawer: SideMenu(
-        scaffoldKey: scaffoldKey,
-      ), // Pasamos la key al SideMenu
+      drawer: SideMenu(scaffoldKey: scaffoldKey), // Pasamos la key al SideMenu
 
       body: const ExercisesView(), // El contenido principal
     );
@@ -34,69 +30,60 @@ class ExercisesScreen extends StatelessWidget {
 }
 
 // Datos de ejemplo simulados
-final List<Exercise> dummyExercises = [
-  Exercise(
-    id: 'E001',
+final List<Ejercicio> dummyExercises = [
+  Ejercicio(
+    id: 1,
     nombre: 'Sentadilla con Banda',
     descripcion: 'Fortalecimiento de cuádriceps y glúteos.',
-    referenceVideo: 'url_video_1',
-    durationSeconds: 0,
+    videoReferencia: 'url_video_1',
+    duracionSegundos: 0,
     repeticiones: 15,
     series: 3,
-    toleranceDegrees: 5,
-    objetiveAngles: '90 grados de rodilla',
-    referenceImage:
-        'https://placehold.co/600x400/004d40/ffffff?text=Fuerza',
-    completed: false,
-    type: TypeExercise.Fuerza,
+    toleranciaGrados: 5,
+    angulosObjetivo: '90 grados de rodilla',
+    imagenReferencia: 'https://placehold.co/600x400/004d40/ffffff?text=Fuerza',
+    tipo: 'Fuerza',
   ),
-  Exercise(
-    id: 'E002',
+  Ejercicio(
+    id: 2,
     nombre: 'Estiramiento Isquiotibial',
-    descripcion:
-        'Mejora la flexibilidad de la parte posterior del muslo.',
-    referenceVideo: 'url_video_2',
-    durationSeconds: 30,
+    descripcion: 'Mejora la flexibilidad de la parte posterior del muslo.',
+    videoReferencia: 'url_video_2',
+    duracionSegundos: 30,
     repeticiones: 1,
     series: 4,
-    toleranceDegrees: 10,
-    objetiveAngles: 'Máximo estiramiento cómodo',
-    referenceImage:
+    toleranciaGrados: 10,
+    angulosObjetivo: 'Máximo estiramiento cómodo',
+    imagenReferencia:
         'https://placehold.co/600x400/00838f/ffffff?text=Flexibilidad',
-    completed: true,
-    type: TypeExercise.Flexibilidad,
+    tipo: 'Flexibilidad',
   ),
-  Exercise(
-    id: 'E003',
+  Ejercicio(
+    id: 3,
     nombre: 'Trotar en el Sitio',
-    descripcion:
-        'Aumento de la frecuencia cardíaca y calentamiento.',
-    referenceVideo: 'url_video_3',
-    durationSeconds: 120,
+    descripcion: 'Aumento de la frecuencia cardíaca y calentamiento.',
+    videoReferencia: 'url_video_3',
+    duracionSegundos: 120,
     repeticiones: 1,
     series: 1,
-    toleranceDegrees: 0,
-    objetiveAngles: 'N/A',
-    referenceImage:
-        'https://placehold.co/600x400/00acc1/ffffff?text=Cardio',
-    completed: false,
-    type: TypeExercise.Cardio,
+    toleranciaGrados: 0,
+    angulosObjetivo: 'N/A',
+    imagenReferencia: 'https://placehold.co/600x400/00acc1/ffffff?text=Cardio',
+    tipo: 'Cardio',
   ),
-  Exercise(
-    id: 'E004',
+  Ejercicio(
+    id: 4,
     nombre: 'Parado en una pierna',
-    descripcion:
-        'Mejora la estabilidad y el equilibrio monopodal.',
-    referenceVideo: 'url_video_4',
-    durationSeconds: 60,
+    descripcion: 'Mejora la estabilidad y el equilibrio monopodal.',
+    videoReferencia: 'url_video_4',
+    duracionSegundos: 60,
     repeticiones: 1,
     series: 2,
-    toleranceDegrees: 3,
-    objetiveAngles: 'Mantener tronco vertical',
-    referenceImage:
+    toleranciaGrados: 3,
+    angulosObjetivo: 'Mantener tronco vertical',
+    imagenReferencia:
         'https://placehold.co/600x400/0277bd/ffffff?text=Equilibrio',
-    completed: false,
-    type: TypeExercise.Equilibrio,
+    tipo: 'Equilibrio',
   ),
 ];
 
@@ -107,44 +94,50 @@ class ExercisesView extends StatelessWidget {
   const ExercisesView({super.key});
 
   // Función de utilidad para obtener el color del tipo de ejercicio
-  Color _getTypeColor(TypeExercise type) {
+  Color _getTypeColor(String type) {
     switch (type) {
-      case TypeExercise.Fuerza:
+      case 'Fuerza':
         return Colors.red.shade700;
-      case TypeExercise.Cardio:
+      case 'Cardio':
         return Colors.green.shade700;
-      case TypeExercise.Flexibilidad:
+      case 'Flexibilidad':
         return Colors.blue.shade700;
-      case TypeExercise.Equilibrio:
+      case 'Equilibrio':
         return Colors.purple.shade700;
+      default:
+        return Colors.grey;
     }
   }
 
   // Función de utilidad para obtener el texto del tipo de ejercicio
-  String _getTypeText(TypeExercise type) {
+  String _getTypeText(String type) {
     switch (type) {
-      case TypeExercise.Fuerza:
+      case 'Fuerza':
         return 'Fuerza 💪';
-      case TypeExercise.Cardio:
+      case 'Cardio':
         return 'Cardio 🏃';
-      case TypeExercise.Flexibilidad:
+      case 'Flexibilidad':
         return 'Flexibilidad 🤸';
-      case TypeExercise.Equilibrio:
+      case 'Equilibrio':
         return 'Equilibrio ⚖️';
+      default:
+        return 'Desconocido';
     }
   }
 
   // Función de utilidad para obtener el icono del tipo
-  IconData _getTypeIcon(TypeExercise type) {
+  IconData _getTypeIcon(String type) {
     switch (type) {
-      case TypeExercise.Fuerza:
+      case 'Fuerza':
         return Icons.fitness_center;
-      case TypeExercise.Cardio:
+      case 'Cardio':
         return Icons.directions_run;
-      case TypeExercise.Flexibilidad:
+      case 'Flexibilidad':
         return Icons.accessibility_new;
-      case TypeExercise.Equilibrio:
+      case 'Equilibrio':
         return Icons.balance;
+      default:
+        return Icons.help;
     }
   }
 
@@ -154,9 +147,7 @@ class ExercisesView extends StatelessWidget {
       elevation: 2,
       margin: const EdgeInsets.only(top: 10),
       color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListView.separated(
         shrinkWrap: true,
         physics: const ClampingScrollPhysics(),
@@ -164,8 +155,8 @@ class ExercisesView extends StatelessWidget {
         separatorBuilder: (c, i) => const Divider(height: 1),
         itemBuilder: (context, index) {
           final exercise = dummyExercises[index];
-          final typeColor = _getTypeColor(exercise.type);
-          final typeIcon = _getTypeIcon(exercise.type);
+          final typeColor = _getTypeColor(exercise.tipo);
+          final typeIcon = _getTypeIcon(exercise.tipo);
 
           return ListTile(
             contentPadding: const EdgeInsets.symmetric(
@@ -180,10 +171,7 @@ class ExercisesView extends StatelessWidget {
             ),
             title: Text(
               exercise.nombre,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,7 +188,7 @@ class ExercisesView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    _getTypeText(exercise.type),
+                    _getTypeText(exercise.tipo),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
@@ -211,18 +199,12 @@ class ExercisesView extends StatelessWidget {
                 const SizedBox(height: 6),
                 // Información resumida
                 Text(
-                  'Reps: ${exercise.repeticiones} • Series: ${exercise.series}${exercise.durationSeconds > 0 ? ' • ${exercise.durationSeconds}s' : ''}',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade700,
-                  ),
+                  'Reps: ${exercise.repeticiones} • Series: ${exercise.series}${exercise.duracionSegundos > 0 ? ' • ${exercise.duracionSegundos}s' : ''}',
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
                 ),
               ],
             ),
-            trailing: const Icon(
-              Icons.chevron_right,
-              color: Colors.grey,
-            ),
+            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
             onTap: () {
               ExerciseDetailModal.show(context, exercise);
             },
