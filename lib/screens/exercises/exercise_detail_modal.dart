@@ -22,40 +22,58 @@ class ExerciseDetailModal extends StatelessWidget {
 
   Color _getTypeColor(TipoEjercicio type) {
     switch (type) {
-      case TipoEjercicio.Fuerza:
+      case TipoEjercicio.fuerza:
         return const Color(0xFFE53935);
-      case TipoEjercicio.Cardio:
+      case TipoEjercicio.movilidad:
         return const Color(0xFF43A047);
-      case TipoEjercicio.Flexibilidad:
+      case TipoEjercicio.flexion:
         return const Color(0xFF1E88E5);
-      case TipoEjercicio.Equilibrio:
+      case TipoEjercicio.equilibrio:
         return const Color(0xFF8E24AA);
+      case TipoEjercicio.rotacion:
+        return const Color(0xFFFFB300);
+      case TipoEjercicio.extension:
+        return const Color(0xFFFB8C00);
+      case TipoEjercicio.otro:
+        return const Color(0xFF6D4C41);
     }
   }
 
   String _getTypeText(TipoEjercicio type) {
     switch (type) {
-      case TipoEjercicio.Fuerza:
+      case TipoEjercicio.fuerza:
         return 'Fuerza';
-      case TipoEjercicio.Cardio:
-        return 'Cardio';
-      case TipoEjercicio.Flexibilidad:
-        return 'Flexibilidad';
-      case TipoEjercicio.Equilibrio:
+      case TipoEjercicio.movilidad:
+        return 'Movilidad';
+      case TipoEjercicio.flexion:
+        return 'Flexión';
+      case TipoEjercicio.equilibrio:
         return 'Equilibrio';
+      case TipoEjercicio.rotacion:
+        return 'Rotación';
+      case TipoEjercicio.extension:
+        return 'Extensión';
+      case TipoEjercicio.otro:
+        return 'Otro';
     }
   }
 
   String _getTypeEmoji(TipoEjercicio type) {
     switch (type) {
-      case TipoEjercicio.Fuerza:
+      case TipoEjercicio.fuerza:
         return '💪';
-      case TipoEjercicio.Cardio:
-        return '🏃';
-      case TipoEjercicio.Flexibilidad:
+      case TipoEjercicio.movilidad:
+        return '🚶';
+      case TipoEjercicio.flexion:
         return '🤸';
-      case TipoEjercicio.Equilibrio:
+      case TipoEjercicio.equilibrio:
         return '⚖️';
+      case TipoEjercicio.rotacion:
+        return '🔄';
+      case TipoEjercicio.extension:
+        return '📐';
+      case TipoEjercicio.otro:
+        return '❓';
     }
   }
 
@@ -181,7 +199,8 @@ class ExerciseDetailModal extends StatelessWidget {
                     isDarkMode: isDarkMode,
                     children: [
                       Text(
-                        exercise.descripcion ?? 'Sin descripción disponible.',
+                        exercise.descripcion ??
+                            'Sin descripción disponible.',
                         style: TextStyle(
                           fontSize: 15,
                           height: 1.5,
@@ -254,7 +273,7 @@ class ExerciseDetailModal extends StatelessWidget {
                       const SizedBox(height: 12),
                       _InfoRow(
                         label: 'Tolerancia',
-                        value: '±${exercise.toleranciaGrados }°',
+                        value: '±${exercise.toleranciaGrados}°',
                         icon: Icons.tune,
                         isDarkMode: isDarkMode,
                       ),

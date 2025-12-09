@@ -20,7 +20,8 @@ class HomeScreen extends ConsumerWidget {
 
         // CASO 3: DATOS LISTOS
         data: (pacientes) {
-          if (pacientes.isEmpty) return Center(child: Text("No hay pacientes"));
+          if (pacientes.isEmpty)
+            return Center(child: Text("No hay pacientes"));
 
           return ListView.builder(
             itemCount: pacientes.length,
@@ -28,7 +29,9 @@ class HomeScreen extends ConsumerWidget {
               final paciente = pacientes[index];
               return ListTile(
                 title: Text(paciente.name),
-                subtitle: Text(paciente.notas?? "Sin diagnóstico"),
+                subtitle: Text(
+                  paciente.notes ?? "Sin diagnóstico",
+                ),
                 onTap: () {
                   // Navegar a detalles o grabar video
                 },

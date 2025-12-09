@@ -1,4 +1,12 @@
-enum TipoEjercicio { Fuerza, Cardio, Flexibilidad, Equilibrio }
+enum TipoEjercicio {
+  fuerza,
+  movilidad,
+  equilibrio,
+  rotacion,
+  extension,
+  flexion,
+  otro,
+}
 
 class Ejercicio {
   final int id;
@@ -37,7 +45,7 @@ class Ejercicio {
   TipoEjercicio get tipoEnum {
     return TipoEjercicio.values.firstWhere(
       (e) => e.toString().split('.').last == tipo,
-      orElse: () => TipoEjercicio.Fuerza,
+      orElse: () => TipoEjercicio.fuerza,
     );
   }
 
@@ -46,12 +54,14 @@ class Ejercicio {
       id: json['id'],
       nombre: json['name'],
       descripcion: json['description'],
-      tipo: json['type'], // Asumiendo que DB devuelve "Fuerza", "Cardio", etc.
+      tipo:
+          json['type'], // Asumiendo que DB devuelve "Fuerza", "Cardio", etc.
       duracionSegundos: json['duration_seconds'],
       repeticiones: json['repetitions'],
       series: json['series'],
       angulosObjetivo: json['objective_angles'], // JSON String
-      toleranciaGrados: (json['tolerance_degrees'] as num).toDouble(),
+      toleranciaGrados: (json['tolerance_degrees'] as num)
+          .toDouble(),
       instrucciones: json['instructions'],
       precauciones: json['precautions'],
       imagenReferencia: json['reference_image'],
