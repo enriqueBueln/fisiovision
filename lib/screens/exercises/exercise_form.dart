@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'package:fisiovision/models/ejercicio_model.dart';
+import 'package:fisiovision/providers/ejercicios_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,12 +12,10 @@ class ExerciseFormScreen extends ConsumerStatefulWidget {
   const ExerciseFormScreen({super.key});
 
   @override
-  ConsumerState<ExerciseFormScreen> createState() =>
-      _ExerciseFormScreenState();
+  ConsumerState<ExerciseFormScreen> createState() => _ExerciseFormScreenState();
 }
 
-class _ExerciseFormScreenState
-    extends ConsumerState<ExerciseFormScreen> {
+class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final Map<String, int> _angulosMap = {};
 
@@ -99,36 +100,30 @@ class _ExerciseFormScreenState
 
       // Simular llamada al backend
       await Future.delayed(const Duration(seconds: 2));
-
-      final nuevoEjercicioData = {
-        'nombre': _nombreCtrl.text.trim(),
-        'descripcion': _descripcionCtrl.text.trim(),
-        'tipo': _tipoEjercicio.name,
-        'repeticiones': int.tryParse(_repeticionesCtrl.text) ?? 0,
-        'series': int.tryParse(_seriesCtrl.text) ?? 0,
-        'duracion_segundos': int.tryParse(_duracionCtrl.text) ?? 0,
-        'tolerancia_grados':
-            int.tryParse(_toleranciaCtrl.text) ?? 0,
-        'angulos_objetivo': _angulosMap,
-        'instrucciones': _instruccionesCtrl.text.trim(),
-        'precauciones': _precaucionesCtrl.text.trim(),
-      };
-
-      print(
-        'Datos listos para enviar al backend: $nuevoEjercicioData',
+      final nuevoEjercicioData = Ejercicio(
+        id: 0,
+        name: _nombreCtrl.text.trim(),
+        type: _tipoEjercicio.name,
+        duration_seconds: int.tryParse(_duracionCtrl.text) ?? 0,
+        repetitions: int.tryParse(_repeticionesCtrl.text) ?? 0,
+        series: int.tryParse(_seriesCtrl.text) ?? 0,
+        objective_angles: jsonEncode(_angulosMap),
+        tolerance_degrees: (int.tryParse(_toleranciaCtrl.text) ?? 0).toDouble(),
       );
 
+      print('Datos listos para enviar al backend: $nuevoEjercicioData');
+
       if (!mounted) return;
+      await ref
+          .read(ejerciciosProvider.notifier)
+          .agregarEjercicio(nuevoEjercicioData);
       setState(() => _isLoading = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
-              const Icon(
-                Icons.check_circle_rounded,
-                color: Colors.white,
-              ),
+              const Icon(Icons.check_circle_rounded, color: Colors.white),
               const SizedBox(width: 12),
               const Text('Ejercicio registrado exitosamente ✨'),
             ],
@@ -148,17 +143,14 @@ class _ExerciseFormScreenState
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode =
-        Theme.of(context).brightness == Brightness.dark;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: isDarkMode
           ? const Color(0xFF0A0E21)
           : const Color(0xFFF8F9FA),
       appBar: AppBar(
-        backgroundColor: isDarkMode
-            ? const Color(0xFF1A1F3A)
-            : Colors.white,
+        backgroundColor: isDarkMode ? const Color(0xFF1A1F3A) : Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 20),
@@ -170,10 +162,7 @@ class _ExerciseFormScreenState
             const SizedBox(width: 12),
             const Text(
               'Nuevo Ejercicio',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -245,31 +234,23 @@ class _ExerciseFormScreenState
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children: TypeExercise.values.map((
-                            type,
-                          ) {
-                            final isSelected =
-                                _tipoEjercicio == type;
+                          children: TypeExercise.values.map((type) {
+                            final isSelected = _tipoEjercicio == type;
                             final color = _getTypeColor(type);
                             return InkWell(
-                              onTap: () => setState(
-                                () => _tipoEjercicio = type,
-                              ),
-                              borderRadius: BorderRadius.circular(
-                                10,
-                              ),
+                              onTap: () =>
+                                  setState(() => _tipoEjercicio = type),
+                              borderRadius: BorderRadius.circular(10),
                               child: Container(
-                                padding:
-                                    const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 10,
-                                    ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? color.withOpacity(0.1)
                                       : Colors.transparent,
-                                  borderRadius:
-                                      BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
                                     color: isSelected
                                         ? color
@@ -284,10 +265,9 @@ class _ExerciseFormScreenState
                                   children: [
                                     if (isSelected)
                                       Padding(
-                                        padding:
-                                            const EdgeInsets.only(
-                                              right: 6,
-                                            ),
+                                        padding: const EdgeInsets.only(
+                                          right: 6,
+                                        ),
                                         child: Icon(
                                           Icons.check_circle,
                                           color: color,
@@ -301,8 +281,7 @@ class _ExerciseFormScreenState
                                             ? color
                                             : (isDarkMode
                                                   ? Colors.white70
-                                                  : Colors
-                                                        .black87),
+                                                  : Colors.black87),
                                         fontWeight: isSelected
                                             ? FontWeight.w600
                                             : FontWeight.w500,
@@ -351,10 +330,8 @@ class _ExerciseFormScreenState
                           hint: '10',
                           keyboardType: TextInputType.number,
                           validator: (value) {
-                            if (value!.trim().isEmpty)
-                              return 'Requerido';
-                            if (int.tryParse(value) == null)
-                              return 'Inválido';
+                            if (value!.trim().isEmpty) return 'Requerido';
+                            if (int.tryParse(value) == null) return 'Inválido';
                             return null;
                           },
                         ),
@@ -368,10 +345,8 @@ class _ExerciseFormScreenState
                           hint: '3',
                           keyboardType: TextInputType.number,
                           validator: (value) {
-                            if (value!.trim().isEmpty)
-                              return 'Requerido';
-                            if (int.tryParse(value) == null)
-                              return 'Inválido';
+                            if (value!.trim().isEmpty) return 'Requerido';
+                            if (int.tryParse(value) == null) return 'Inválido';
                             return null;
                           },
                         ),
@@ -441,10 +416,7 @@ class _ExerciseFormScreenState
                         ),
                         child: IconButton(
                           onPressed: _agregarAngulo,
-                          icon: const Icon(
-                            Icons.add,
-                            color: Colors.white,
-                          ),
+                          icon: const Icon(Icons.add, color: Colors.white),
                           tooltip: 'Agregar ángulo',
                         ),
                       ),
@@ -463,9 +435,7 @@ class _ExerciseFormScreenState
                           label: Text(
                             '${entry.key}: ${entry.value}°',
                             style: TextStyle(
-                              color: isDarkMode
-                                  ? Colors.white
-                                  : Colors.black87,
+                              color: isDarkMode ? Colors.white : Colors.black87,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -524,9 +494,7 @@ class _ExerciseFormScreenState
                           ? null
                           : () => context.go('/ejercicios'),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 16,
-                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                         side: BorderSide(
                           color: isDarkMode
                               ? Colors.white24
@@ -551,12 +519,8 @@ class _ExerciseFormScreenState
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _submitForm,
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 16,
-                        ),
-                        backgroundColor: _getTypeColor(
-                          _tipoEjercicio,
-                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: _getTypeColor(_tipoEjercicio),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
@@ -576,13 +540,9 @@ class _ExerciseFormScreenState
                               ),
                             )
                           : Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.center,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(
-                                  Icons.save_outlined,
-                                  size: 20,
-                                ),
+                                const Icon(Icons.save_outlined, size: 20),
                                 const SizedBox(width: 8),
                                 const Text(
                                   'Registrar Ejercicio',
@@ -623,8 +583,7 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode =
-        Theme.of(context).brightness == Brightness.dark;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -649,9 +608,7 @@ class _SectionCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: isDarkMode
-                      ? Colors.white
-                      : Colors.black87,
+                  color: isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
             ],
@@ -687,8 +644,7 @@ class _CustomTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode =
-        Theme.of(context).brightness == Brightness.dark;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return TextFormField(
       controller: controller,
@@ -721,24 +677,15 @@ class _CustomTextField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFF1E88E5),
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: Color(0xFF1E88E5), width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFE53935),
-            width: 1,
-          ),
+          borderSide: const BorderSide(color: Color(0xFFE53935), width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFE53935),
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,

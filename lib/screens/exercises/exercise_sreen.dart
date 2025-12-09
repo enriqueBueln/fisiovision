@@ -33,57 +33,57 @@ class ExercisesScreen extends StatelessWidget {
 final List<Ejercicio> dummyExercises = [
   Ejercicio(
     id: 1,
-    nombre: 'Sentadilla con Banda',
-    descripcion: 'Fortalecimiento de cuádriceps y glúteos.',
-    videoReferencia: 'url_video_1',
-    duracionSegundos: 0,
-    repeticiones: 15,
+    name: 'Sentadilla con Banda',
+    description: 'Fortalecimiento de cuádriceps y glúteos.',
+    reference_video: 'url_video_1',
+    duration_seconds: 0,
+    repetitions: 15,
     series: 3,
-    toleranciaGrados: 5,
-    angulosObjetivo: '90 grados de rodilla',
-    imagenReferencia: 'https://placehold.co/600x400/004d40/ffffff?text=Fuerza',
-    tipo: 'Fuerza',
+    tolerance_degrees: 5,
+    objective_angles: '90 grados de rodilla',
+    reference_image: 'https://placehold.co/600x400/004d40/ffffff?text=Fuerza',
+    type: 'Fuerza',
   ),
   Ejercicio(
     id: 2,
-    nombre: 'Estiramiento Isquiotibial',
-    descripcion: 'Mejora la flexibilidad de la parte posterior del muslo.',
-    videoReferencia: 'url_video_2',
-    duracionSegundos: 30,
-    repeticiones: 1,
+    name: 'Estiramiento Isquiotibial',
+    description: 'Mejora la flexibilidad de la parte posterior del muslo.',
+    reference_video: 'url_video_2',
+    duration_seconds: 30,
+    repetitions: 1,
     series: 4,
-    toleranciaGrados: 10,
-    angulosObjetivo: 'Máximo estiramiento cómodo',
-    imagenReferencia:
+    tolerance_degrees: 10,
+    objective_angles: 'Máximo estiramiento cómodo',
+    reference_image:
         'https://placehold.co/600x400/00838f/ffffff?text=Flexibilidad',
-    tipo: 'Flexibilidad',
+    type: 'Flexibilidad',
   ),
   Ejercicio(
     id: 3,
-    nombre: 'Trotar en el Sitio',
-    descripcion: 'Aumento de la frecuencia cardíaca y calentamiento.',
-    videoReferencia: 'url_video_3',
-    duracionSegundos: 120,
-    repeticiones: 1,
+    name: 'Trotar en el Sitio',
+    description: 'Aumento de la frecuencia cardíaca y calentamiento.',
+    reference_video: 'url_video_3',
+    duration_seconds: 120,
+    repetitions: 1,
     series: 1,
-    toleranciaGrados: 0,
-    angulosObjetivo: 'N/A',
-    imagenReferencia: 'https://placehold.co/600x400/00acc1/ffffff?text=Cardio',
-    tipo: 'Cardio',
+    tolerance_degrees: 0,
+    objective_angles: 'N/A',
+    reference_image: 'https://placehold.co/600x400/00acc1/ffffff?text=Cardio',
+    type: 'Cardio',
   ),
   Ejercicio(
     id: 4,
-    nombre: 'Parado en una pierna',
-    descripcion: 'Mejora la estabilidad y el equilibrio monopodal.',
-    videoReferencia: 'url_video_4',
-    duracionSegundos: 60,
-    repeticiones: 1,
+    name: 'Parado en una pierna',
+    description: 'Mejora la estabilidad y el equilibrio monopodal.',
+    reference_video: 'url_video_4',
+    duration_seconds: 60,
+    repetitions: 1,
     series: 2,
-    toleranciaGrados: 3,
-    angulosObjetivo: 'Mantener tronco vertical',
-    imagenReferencia:
+    tolerance_degrees: 3,
+    objective_angles: 'Mantener tronco vertical',
+    reference_image:
         'https://placehold.co/600x400/0277bd/ffffff?text=Equilibrio',
-    tipo: 'Equilibrio',
+    type: 'Equilibrio',
   ),
 ];
 
@@ -155,8 +155,8 @@ class ExercisesView extends StatelessWidget {
         separatorBuilder: (c, i) => const Divider(height: 1),
         itemBuilder: (context, index) {
           final exercise = dummyExercises[index];
-          final typeColor = _getTypeColor(exercise.tipo);
-          final typeIcon = _getTypeIcon(exercise.tipo);
+          final typeColor = _getTypeColor(exercise.type);
+          final typeIcon = _getTypeIcon(exercise.type);
 
           return ListTile(
             contentPadding: const EdgeInsets.symmetric(
@@ -170,7 +170,7 @@ class ExercisesView extends StatelessWidget {
               child: Icon(typeIcon, size: 26),
             ),
             title: Text(
-              exercise.nombre,
+              exercise.name,
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             subtitle: Column(
@@ -188,7 +188,7 @@ class ExercisesView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    _getTypeText(exercise.tipo),
+                    _getTypeText(exercise.type),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
@@ -199,7 +199,7 @@ class ExercisesView extends StatelessWidget {
                 const SizedBox(height: 6),
                 // Información resumida
                 Text(
-                  'Reps: ${exercise.repeticiones} • Series: ${exercise.series}${exercise.duracionSegundos > 0 ? ' • ${exercise.duracionSegundos}s' : ''}',
+                  'Reps: ${exercise.repetitions} • Series: ${exercise.series}${exercise.duration_seconds > 0 ? ' • ${exercise.duration_seconds}s' : ''}',
                   style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
                 ),
               ],

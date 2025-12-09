@@ -171,7 +171,7 @@ class ExerciseDetailModal extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        exercise.nombre,
+                        exercise.name,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 24,
@@ -199,7 +199,7 @@ class ExerciseDetailModal extends StatelessWidget {
                     isDarkMode: isDarkMode,
                     children: [
                       Text(
-                        exercise.descripcion ??
+                        exercise.description ??
                             'Sin descripción disponible.',
                         style: TextStyle(
                           fontSize: 15,
@@ -226,7 +226,7 @@ class ExerciseDetailModal extends StatelessWidget {
                             child: _ParameterBox(
                               icon: Icons.repeat,
                               label: 'Repeticiones',
-                              value: '${exercise.repeticiones}',
+                              value: '${exercise.repetitions}',
                               color: const Color(0xFF1E88E5),
                               isDarkMode: isDarkMode,
                             ),
@@ -243,12 +243,12 @@ class ExerciseDetailModal extends StatelessWidget {
                           ),
                         ],
                       ),
-                      if (exercise.duracionSegundos > 0) ...[
+                      if (exercise.duration_seconds > 0) ...[
                         const SizedBox(height: 12),
                         _ParameterBox(
                           icon: Icons.timer_outlined,
                           label: 'Duración',
-                          value: '${exercise.duracionSegundos}s',
+                          value: '${exercise.duration_seconds}s',
                           color: const Color(0xFFFB8C00),
                           isDarkMode: isDarkMode,
                         ),
@@ -266,14 +266,14 @@ class ExerciseDetailModal extends StatelessWidget {
                     children: [
                       _InfoRow(
                         label: 'Ángulos objetivo',
-                        value: exercise.angulosObjetivo,
+                        value: exercise.objective_angles,
                         icon: Icons.architecture,
                         isDarkMode: isDarkMode,
                       ),
                       const SizedBox(height: 12),
                       _InfoRow(
                         label: 'Tolerancia',
-                        value: '±${exercise.toleranciaGrados}°',
+                        value: '±${exercise.tolerance_degrees}°',
                         icon: Icons.tune,
                         isDarkMode: isDarkMode,
                       ),
@@ -297,7 +297,7 @@ class ExerciseDetailModal extends StatelessWidget {
                           onPressed: () {
                             // Acción de ver video
                             print(
-                              'Ver video: ${exercise.videoReferencia}',
+                              'Ver video: ${exercise.reference_video}',
                             );
                           },
                           icon: const Icon(
