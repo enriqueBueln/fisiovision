@@ -1,3 +1,5 @@
+import 'package:fisiovision/models/paciente_model.dart';
+import 'package:fisiovision/providers/paciente_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,12 +8,10 @@ class PatientFormScreen extends ConsumerStatefulWidget {
   const PatientFormScreen({super.key});
 
   @override
-  ConsumerState<PatientFormScreen> createState() =>
-      _PatientFormScreenState();
+  ConsumerState<PatientFormScreen> createState() => _PatientFormScreenState();
 }
 
-class _PatientFormScreenState
-    extends ConsumerState<PatientFormScreen> {
+class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
   // Controladores
@@ -22,7 +22,7 @@ class _PatientFormScreenState
   final _alergiasCtrl = TextEditingController();
 
   // Estado
-  DateTime? _fechaNacimiento;
+  DateTime? _fechaNacimiento = DateTime(2000, 1, 1);
   String _genero = 'Masculino';
   String _riesgo = 'Bajo';
   bool _isLoading = false;
@@ -88,14 +88,9 @@ class _PatientFormScreenState
           SnackBar(
             content: Row(
               children: [
-                const Icon(
-                  Icons.warning_amber_rounded,
-                  color: Colors.white,
-                ),
+                const Icon(Icons.warning_amber_rounded, color: Colors.white),
                 const SizedBox(width: 12),
-                const Text(
-                  'Por favor, selecciona la fecha de nacimiento',
-                ),
+                const Text('Por favor, selecciona la fecha de nacimiento'),
               ],
             ),
             backgroundColor: const Color(0xFFFB8C00),
@@ -111,40 +106,33 @@ class _PatientFormScreenState
       setState(() => _isLoading = true);
 
       // Simular llamada al backend
-      await Future.delayed(const Duration(seconds: 2));
 
-      final nuevoPacienteData = {
-        'nombre': _nombreCtrl.text.trim(),
-        'email': _emailCtrl.text.trim(),
-        'telefono': _telefonoCtrl.text.trim(),
-        'fecha_nacimiento': _fechaNacimiento!
-            .toIso8601String()
-            .split('T')
-            .first,
-        'edad': _calcularEdad(),
-        'genero': _genero,
-        'lesion': _lesionCtrl.text.trim(),
-        'riesgo': _riesgo,
-        'alergias': _alergiasCtrl.text.trim().isEmpty
-            ? 'Ninguna'
-            : _alergiasCtrl.text.trim(),
-      };
-
-      print(
-        'Datos listos para enviar al backend: $nuevoPacienteData',
+      final nuevoPacienteData = Paciente(
+        id: 0, // El backend asignará el ID
+        nombre: _nombreCtrl.text.trim(),
+        apellido: '', // Podrías separar el apellido si lo deseas
+        email: _emailCtrl.text.trim(),
+        fechaNacimiento: _fechaNacimiento!,
+        genero: _genero,
+        idUsuario: 1, // Asumimos un usuario fijo por ahora
+        direccion: _telefonoCtrl.text.trim(),
+        notas: _alergiasCtrl.text.trim(),
       );
 
+      print('Datos listos para enviar al backend: $nuevoPacienteData');
+
       if (!mounted) return;
+
+      await ref
+          .read(pacientesProvider.notifier)
+          .agregarPaciente(nuevoPacienteData);
       setState(() => _isLoading = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
-              const Icon(
-                Icons.check_circle_rounded,
-                color: Colors.white,
-              ),
+              const Icon(Icons.check_circle_rounded, color: Colors.white),
               const SizedBox(width: 12),
               const Text('Paciente registrado exitosamente ✨'),
             ],
@@ -157,25 +145,20 @@ class _PatientFormScreenState
         ),
       );
 
-      // Esperar un momento y redirigir a la lista de pacientes
-      await Future.delayed(const Duration(milliseconds: 500));
       if (mounted) context.go('/pacientes');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode =
-        Theme.of(context).brightness == Brightness.dark;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: isDarkMode
           ? const Color(0xFF0A0E21)
           : const Color(0xFFF8F9FA),
       appBar: AppBar(
-        backgroundColor: isDarkMode
-            ? const Color(0xFF1A1F3A)
-            : Colors.white,
+        backgroundColor: isDarkMode ? const Color(0xFF1A1F3A) : Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 20),
@@ -187,10 +170,7 @@ class _PatientFormScreenState
             const SizedBox(width: 12),
             const Text(
               'Nuevo Paciente',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -229,10 +209,8 @@ class _PatientFormScreenState
                           hint: 'correo@ejemplo.com',
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
-                            if (value!.trim().isEmpty)
-                              return 'Email requerido';
-                            if (!value.contains('@'))
-                              return 'Email inválido';
+                            if (value!.trim().isEmpty) return 'Email requerido';
+                            if (!value.contains('@')) return 'Email inválido';
                             return null;
                           },
                         ),
@@ -248,8 +226,7 @@ class _PatientFormScreenState
                           validator: (value) {
                             if (value!.trim().isEmpty)
                               return 'Teléfono requerido';
-                            if (value.trim().length < 8)
-                              return 'Muy corto';
+                            if (value.trim().length < 8) return 'Muy corto';
                             return null;
                           },
                         ),
@@ -276,12 +253,8 @@ class _PatientFormScreenState
                           color: _fechaNacimiento == null
                               ? const Color(0xFFE53935)
                               : (isDarkMode
-                                    ? Colors.white.withOpacity(
-                                        0.05,
-                                      )
-                                    : Colors.grey.withOpacity(
-                                        0.15,
-                                      )),
+                                    ? Colors.white.withOpacity(0.05)
+                                    : Colors.grey.withOpacity(0.15)),
                         ),
                       ),
                       child: Row(
@@ -296,8 +269,7 @@ class _PatientFormScreenState
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   'Fecha de Nacimiento',
@@ -329,9 +301,7 @@ class _PatientFormScreenState
                                     '${_calcularEdad()} años',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: const Color(
-                                        0xFF1E88E5,
-                                      ),
+                                      color: const Color(0xFF1E88E5),
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -399,9 +369,8 @@ class _PatientFormScreenState
                                 label: 'Masculino',
                                 emoji: '👨',
                                 selected: _genero == 'Masculino',
-                                onTap: () => setState(
-                                  () => _genero = 'Masculino',
-                                ),
+                                onTap: () =>
+                                    setState(() => _genero = 'Masculino'),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -410,9 +379,8 @@ class _PatientFormScreenState
                                 label: 'Femenino',
                                 emoji: '👩',
                                 selected: _genero == 'Femenino',
-                                onTap: () => setState(
-                                  () => _genero = 'Femenino',
-                                ),
+                                onTap: () =>
+                                    setState(() => _genero = 'Femenino'),
                               ),
                             ),
                           ],
@@ -431,105 +399,8 @@ class _PatientFormScreenState
                 title: 'Información Médica',
                 children: [
                   _CustomTextField(
-                    controller: _lesionCtrl,
-                    label: 'Diagnóstico / Lesión Principal',
-                    icon: Icons.healing_outlined,
-                    hint: 'Ej: Esguince de tobillo',
-                    minLines: 2,
-                    maxLines: 3,
-                    validator: (value) => value!.trim().isEmpty
-                        ? 'El diagnóstico es obligatorio'
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Nivel de Riesgo
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isDarkMode
-                          ? const Color(0xFF0F1629)
-                          : const Color(0xFFF8F9FA),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isDarkMode
-                            ? Colors.white.withOpacity(0.05)
-                            : Colors.grey.withOpacity(0.15),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.warning_amber_outlined,
-                              size: 20,
-                              color: isDarkMode
-                                  ? Colors.white70
-                                  : Colors.black54,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Nivel de Riesgo',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: isDarkMode
-                                    ? Colors.white
-                                    : Colors.black87,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _RiskOption(
-                                label: 'Bajo',
-                                emoji: '🟢',
-                                color: const Color(0xFF43A047),
-                                selected: _riesgo == 'Bajo',
-                                onTap: () => setState(
-                                  () => _riesgo = 'Bajo',
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _RiskOption(
-                                label: 'Medio',
-                                emoji: '🟡',
-                                color: const Color(0xFFFB8C00),
-                                selected: _riesgo == 'Medio',
-                                onTap: () => setState(
-                                  () => _riesgo = 'Medio',
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _RiskOption(
-                                label: 'Alto',
-                                emoji: '🔴',
-                                color: const Color(0xFFE53935),
-                                selected: _riesgo == 'Alto',
-                                onTap: () => setState(
-                                  () => _riesgo = 'Alto',
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  _CustomTextField(
                     controller: _alergiasCtrl,
-                    label: 'Alergias / Consideraciones (Opcional)',
+                    label: 'Notas',
                     icon: Icons.medication_outlined,
                     hint: 'Ej: Alergia a penicilina',
                     minLines: 2,
@@ -549,9 +420,7 @@ class _PatientFormScreenState
                           ? null
                           : () => context.go('/pacientes'),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 16,
-                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                         side: BorderSide(
                           color: isDarkMode
                               ? Colors.white24
@@ -576,9 +445,7 @@ class _PatientFormScreenState
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _submitForm,
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 16,
-                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                         backgroundColor: const Color(0xFF1E88E5),
                         foregroundColor: Colors.white,
                         elevation: 0,
@@ -599,13 +466,9 @@ class _PatientFormScreenState
                               ),
                             )
                           : Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.center,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(
-                                  Icons.save_outlined,
-                                  size: 20,
-                                ),
+                                const Icon(Icons.save_outlined, size: 20),
                                 const SizedBox(width: 8),
                                 const Text(
                                   'Registrar Paciente',
@@ -646,8 +509,7 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode =
-        Theme.of(context).brightness == Brightness.dark;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -672,9 +534,7 @@ class _SectionCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: isDarkMode
-                      ? Colors.white
-                      : Colors.black87,
+                  color: isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
             ],
@@ -710,8 +570,7 @@ class _CustomTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode =
-        Theme.of(context).brightness == Brightness.dark;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return TextFormField(
       controller: controller,
@@ -744,24 +603,15 @@ class _CustomTextField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFF1E88E5),
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: Color(0xFF1E88E5), width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFE53935),
-            width: 1,
-          ),
+          borderSide: const BorderSide(color: Color(0xFFE53935), width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFE53935),
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
@@ -788,8 +638,7 @@ class _RadioOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode =
-        Theme.of(context).brightness == Brightness.dark;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return InkWell(
       onTap: onTap,
@@ -804,9 +653,7 @@ class _RadioOption extends StatelessWidget {
           border: Border.all(
             color: selected
                 ? const Color(0xFF1E88E5)
-                : (isDarkMode
-                      ? Colors.white12
-                      : Colors.grey[300]!),
+                : (isDarkMode ? Colors.white12 : Colors.grey[300]!),
             width: selected ? 2 : 1,
           ),
         ),
@@ -819,14 +666,10 @@ class _RadioOption extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 14,
-                fontWeight: selected
-                    ? FontWeight.w600
-                    : FontWeight.w500,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                 color: selected
                     ? const Color(0xFF1E88E5)
-                    : (isDarkMode
-                          ? Colors.white70
-                          : Colors.black87),
+                    : (isDarkMode ? Colors.white70 : Colors.black87),
               ),
             ),
           ],
@@ -853,8 +696,7 @@ class _RiskOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode =
-        Theme.of(context).brightness == Brightness.dark;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return InkWell(
       onTap: onTap,
@@ -862,16 +704,12 @@ class _RiskOption extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: selected
-              ? color.withOpacity(0.1)
-              : Colors.transparent,
+          color: selected ? color.withOpacity(0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: selected
                 ? color
-                : (isDarkMode
-                      ? Colors.white12
-                      : Colors.grey[300]!),
+                : (isDarkMode ? Colors.white12 : Colors.grey[300]!),
             width: selected ? 2 : 1,
           ),
         ),
@@ -883,14 +721,10 @@ class _RiskOption extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 13,
-                fontWeight: selected
-                    ? FontWeight.w600
-                    : FontWeight.w500,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                 color: selected
                     ? color
-                    : (isDarkMode
-                          ? Colors.white70
-                          : Colors.black87),
+                    : (isDarkMode ? Colors.white70 : Colors.black87),
               ),
             ),
           ],

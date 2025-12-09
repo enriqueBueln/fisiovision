@@ -1,10 +1,11 @@
 import 'dart:convert';
+import 'package:fisiovision/config/token.dart';
 import 'package:http/http.dart' as http;
 import 'package:riverpod/riverpod.dart';
 import '../models/paciente_model.dart';
 
 class PacienteService {
-  final String baseUrl = "https://tu-api.com/api";
+  final String baseUrl = "http://localhost:8000/api/v1"; // Cambiar por la URL real de la API
 
   // GET: Obtener pacientes
   Future<List<Paciente>> getPacientes() async {
@@ -21,9 +22,11 @@ class PacienteService {
 
   // POST: Crear paciente (o enviar video más adelante)
   Future<void> addPaciente(Paciente paciente) async {
+    String token = await getData('access_token');
+    print('Token obtenido en addPaciente: $token');
     await http.post(
       Uri.parse('$baseUrl/pacientes'),
-      headers: {"Content-Type": "application/json"},
+      headers: {"Content-Type": "application/json", "Authorization": "Bearer $token"},
       body: json.encode(paciente.toJson()),
     );
   }

@@ -199,7 +199,7 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
     if (success) {
       final authState = ref.read(authProvider);
       final user = authState.user;
-
+      print("Usuario logueado: ${user?.isTerapeuta}");
       if (user != null) {
         // Redirigir según el tipo de usuario
         if (user.isTerapeuta) {

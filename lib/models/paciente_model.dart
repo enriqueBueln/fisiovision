@@ -1,5 +1,5 @@
 class Paciente {
-  final int id; // En DB es bigint, en Dart int (64-bit)
+  final int? id; // En DB es bigint, en Dart int (64-bit)
   final String nombre;
   final String apellido; // second_name en DB
   final String email;
@@ -7,7 +7,7 @@ class Paciente {
   final String genero;
   final String? direccion;
   final String? notas;
-  final int idUsuario; // Relación con tabla Usuario
+  final int? idUsuario; // Relación con tabla Usuario
   final bool isActive;
 
   // Getter útil para la UI
@@ -54,7 +54,6 @@ class Paciente {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'name': nombre,
       'second_name': apellido,
       'email': email,
@@ -62,8 +61,6 @@ class Paciente {
       'gender': genero,
       'address': direccion,
       'notes': notas,
-      'id_user': idUsuario,
-      'isActive': isActive,
     };
   }
 }
