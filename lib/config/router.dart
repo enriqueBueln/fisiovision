@@ -1,3 +1,5 @@
+// config/router.dart
+import 'package:fisiovision/providers/auth_provider.dart';
 import 'package:fisiovision/screens/exercises/exercise_form.dart';
 import 'package:fisiovision/screens/exercises/exercise_sreen.dart';
 import 'package:fisiovision/screens/login/login_screen.dart';
@@ -8,68 +10,141 @@ import 'package:fisiovision/screens/view_patient/patient/connection_web.dart';
 import 'package:fisiovision/screens/view_patient/patient/laptop_feedback.dart';
 import 'package:fisiovision/screens/view_patient/patient/mobile_camera_view.dart';
 import 'package:fisiovision/screens/view_patient/patient/patient_home_screen.dart';
-import 'package:go_router/go_router.dart';
-// Importa tus pantallas
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:go_router/go_router.dart';
+
+// Provider del router que depende del estado de autenticación
+final routerProvider = Provider<GoRouter>((ref) {
+  final authState = ref.watch(authProvider);
+
+  return GoRouter(
+    initialLocation: '/login',
+    redirect: (context, state) {
+      final isLoggedIn = authState.isAuthenticated;
+      final isGoingToLogin = state.matchedLocation == '/login';
+
+      // Si no está logueado y no va al login, redirigir al login
+      if (!isLoggedIn && !isGoingToLogin) {
+        return '/login';
+      }
+
+      // Si está logueado y está en el login, redirigir según tipo de usuario
+      if (isLoggedIn && isGoingToLogin) {
+        final user = authState.user;
+        if (user != null) {
+          return user.isTerapeuta ? '/pacientes' : '/home';
+        }
+      }
+
+      // No hay redirect necesario
+      return null;
+    },
+    routes: [
+      // RUTA DE AUTENTICACIÓN (Login/Register)
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+
+      // RUTA PARA TERAPEUTAS
+      GoRoute(
+        path: '/pacientes',
+        builder: (context, state) => const PatientScreen(),
+      ),
+      GoRoute(
+        path: '/paciente/nuevo',
+        builder: (context, state) => const PatientFormScreen(),
+      ),
+      GoRoute(
+        path: '/asignacion-rutina',
+        builder: (context, state) =>
+            const RoutineAssignmentScreen(),
+      ),
+
+      // RUTA PARA PACIENTES
+      GoRoute(
+        path: '/home',
+        builder: (context, state) => const PatientHomeScreen(),
+      ),
+      GoRoute(
+        path: '/connect-device',
+        builder: (context, state) => const ConnectDeviceView(),
+      ),
+      GoRoute(
+        path: '/camera-mobile',
+        builder: (context, state) => const MobileCameraView(),
+      ),
+      GoRoute(
+        path: '/laptop-feedback',
+        builder: (context, state) => const LaptopFeedbackView(),
+      ),
+
+      // RUTAS DE EJERCICIOS
+      GoRoute(
+        path: '/ejercicios',
+        builder: (context, state) => const ExercisesScreen(),
+      ),
+      GoRoute(
+        path: '/ejercicio/nuevo',
+        builder: (context, state) => const ExerciseFormScreen(),
+      ),
+    ],
+  );
+});
+
+// Mantén también esta versión para compatibilidad
+// pero ahora usa el routerProvider en main.dart
 final appRouter = GoRouter(
-  initialLocation: '/pacientes',
+  initialLocation: '/login',
   routes: [
-    GoRoute(
-      path: '/asignacion-rutina',
-      builder: (context, state) {
-        return const RoutineAssignmentScreen();
-      },
-    ),
+    // RUTA DE AUTENTICACIÓN (Login/Register)
     GoRoute(
       path: '/login',
       builder: (context, state) => const LoginScreen(),
     ),
-    // RUTA 1: Pacientes
-    GoRoute(
-      path: '/laptop-feedback',
-      builder: (context, state) {
-        return const LaptopFeedbackView();
-      },
-    ),
-    GoRoute(
-      path: '/camera-mobile',
-      builder: (context, state) {
-        return const MobileCameraView();
-      },
-    ),
-    GoRoute(
-      path: '/home',
-      builder: (context, state) => const PatientHomeScreen(),
-    ),
-    GoRoute(
-      path: '/connect-device',
-      builder: (context, state) {
-        return const ConnectDeviceView();
-      },
-    ),
+
+    // RUTA PARA TERAPEUTAS
     GoRoute(
       path: '/pacientes',
       builder: (context, state) => const PatientScreen(),
     ),
     GoRoute(
       path: '/paciente/nuevo',
-      builder: (context, state) {
-        // Aquí iría la pantalla para agregar un nuevo paciente
-        return const PatientFormScreen();
-      },
+      builder: (context, state) => const PatientFormScreen(),
     ),
-    // RUTA 2: Ejercicios (Ejemplo)
+    GoRoute(
+      path: '/asignacion-rutina',
+      builder: (context, state) => const RoutineAssignmentScreen(),
+    ),
+
+    // RUTA PARA PACIENTES
+    GoRoute(
+      path: '/home',
+      builder: (context, state) => const PatientHomeScreen(),
+    ),
+    GoRoute(
+      path: '/connect-device',
+      builder: (context, state) => const ConnectDeviceView(),
+    ),
+    GoRoute(
+      path: '/camera-mobile',
+      builder: (context, state) => const MobileCameraView(),
+    ),
+    GoRoute(
+      path: '/laptop-feedback',
+      builder: (context, state) => const LaptopFeedbackView(),
+    ),
+
+    // RUTAS DE EJERCICIOS
     GoRoute(
       path: '/ejercicios',
-      builder: (context, state) =>
-          const ExercisesScreen(), // Asumiendo que harás esta
+      builder: (context, state) => const ExercisesScreen(),
     ),
     GoRoute(
       path: '/ejercicio/nuevo',
-      builder: (context, state) {
-        // Aquí iría la pantalla para agregar un nuevo ejercicio
-        return const ExerciseFormScreen(); // Placeholder
-      },
+      builder: (context, state) => const ExerciseFormScreen(),
     ),
   ],
 );

@@ -1,12 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod/legacy.dart';
+import 'package:fisiovision/providers/auth_provider.dart';
+import 'package:go_router/go_router.dart';
 
-// Provider simulado
-final authStateProvider = StateProvider<bool>((ref) => false);
-
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  ConsumerState<LoginScreen> createState() => _AuthScreenState();
+}
+
+class _AuthScreenState extends ConsumerState<LoginScreen> {
+  bool _isLoginMode = true;
+
+  void _toggleMode() {
+    setState(() {
+      _isLoginMode = !_isLoginMode;
+    });
+    // Limpiar errores al cambiar de modo
+    ref.read(authProvider.notifier).clearError();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +43,7 @@ class LoginScreen extends StatelessWidget {
                 children: [
                   const SizedBox(height: 40),
 
-                  // LOGO SIMPLE
+                  // LOGO
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -43,10 +56,10 @@ class LoginScreen extends StatelessWidget {
                             ).withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.accessibility_new_rounded,
                       size: 60,
-                      color: const Color(0xFF1E88E5),
+                      color: Color(0xFF1E88E5),
                     ),
                   ),
 
@@ -95,17 +108,21 @@ class LoginScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: const _LoginForm(),
+                    child: _isLoginMode
+                        ? _LoginForm(onToggleMode: _toggleMode)
+                        : _RegisterForm(onToggleMode: _toggleMode),
                   ),
 
                   const SizedBox(height: 32),
 
-                  // LINK DE REGISTRO
+                  // LINK DE CAMBIO DE MODO
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        '¿No tienes cuenta?',
+                        _isLoginMode
+                            ? '¿No tienes cuenta?'
+                            : '¿Ya tienes cuenta?',
                         style: TextStyle(
                           color: isDarkMode
                               ? Colors.grey[400]
@@ -114,15 +131,17 @@ class LoginScreen extends StatelessWidget {
                         ),
                       ),
                       TextButton(
-                        onPressed: () => print("Ir a registro"),
+                        onPressed: _toggleMode,
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
                           ),
                         ),
-                        child: const Text(
-                          'Crear cuenta',
-                          style: TextStyle(
+                        child: Text(
+                          _isLoginMode
+                              ? 'Crear cuenta'
+                              : 'Iniciar sesión',
+                          style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),
@@ -142,9 +161,11 @@ class LoginScreen extends StatelessWidget {
   }
 }
 
-// FORMULARIO
+// FORMULARIO DE LOGIN
 class _LoginForm extends ConsumerStatefulWidget {
-  const _LoginForm();
+  final VoidCallback onToggleMode;
+
+  const _LoginForm({required this.onToggleMode});
 
   @override
   ConsumerState<_LoginForm> createState() => _LoginFormState();
@@ -166,21 +187,50 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    ref.read(authStateProvider.notifier).state = true;
-    await Future.delayed(const Duration(seconds: 2));
+    final success = await ref
+        .read(authProvider.notifier)
+        .login(
+          email: _emailCtrl.text.trim(),
+          password: _passCtrl.text,
+        );
 
     if (!mounted) return;
-    ref.read(authStateProvider.notifier).state = false;
-    print("Login Exitoso: Email: ${_emailCtrl.text}");
+
+    if (success) {
+      final authState = ref.read(authProvider);
+      final user = authState.user;
+
+      if (user != null) {
+        // Redirigir según el tipo de usuario
+        if (user.isTerapeuta) {
+          context.go('/pacientes');
+        } else {
+          context.go('/home');
+        }
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = ref.watch(authStateProvider);
+    final authState = ref.watch(authProvider);
     final isDarkMode =
         Theme.of(context).brightness == Brightness.dark;
     final isMobile = MediaQuery.of(context).size.width < 600;
     final formWidth = isMobile ? double.infinity : 380.0;
+
+    // Mostrar error si existe
+    if (authState.error != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authState.error!),
+            backgroundColor: Colors.red,
+          ),
+        );
+        ref.read(authProvider.notifier).clearError();
+      });
+    }
 
     return Center(
       child: SizedBox(
@@ -190,7 +240,6 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // TÍTULO DEL FORM
               const Text(
                 'Iniciar sesión',
                 style: TextStyle(
@@ -199,7 +248,6 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
                   letterSpacing: -0.3,
                 ),
               ),
-
               const SizedBox(height: 32),
 
               // EMAIL
@@ -207,48 +255,11 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
                 controller: _emailCtrl,
                 keyboardType: TextInputType.emailAddress,
                 style: const TextStyle(fontSize: 15),
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  hintText: 'tu@email.com',
-                  prefixIcon: const Icon(
-                    Icons.email_outlined,
-                    size: 20,
-                  ),
-                  filled: true,
-                  fillColor: isDarkMode
-                      ? const Color(0xFF0F1629)
-                      : const Color(0xFFF8F9FA),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: isDarkMode
-                          ? Colors.white.withOpacity(0.05)
-                          : Colors.grey.withOpacity(0.15),
-                      width: 1,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF1E88E5),
-                      width: 2,
-                    ),
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Colors.redAccent,
-                      width: 1,
-                    ),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
+                decoration: _buildInputDecoration(
+                  isDarkMode: isDarkMode,
+                  label: 'Email',
+                  hint: 'tu@email.com',
+                  icon: Icons.email_outlined,
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty)
@@ -258,7 +269,6 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
                   return null;
                 },
               ),
-
               const SizedBox(height: 20),
 
               // PASSWORD
@@ -266,48 +276,11 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
                 controller: _passCtrl,
                 obscureText: _isObscure,
                 style: const TextStyle(fontSize: 15),
-                decoration: InputDecoration(
-                  labelText: 'Contraseña',
-                  hintText: '••••••••',
-                  prefixIcon: const Icon(
-                    Icons.lock_outline,
-                    size: 20,
-                  ),
-                  filled: true,
-                  fillColor: isDarkMode
-                      ? const Color(0xFF0F1629)
-                      : const Color(0xFFF8F9FA),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: isDarkMode
-                          ? Colors.white.withOpacity(0.05)
-                          : Colors.grey.withOpacity(0.15),
-                      width: 1,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF1E88E5),
-                      width: 2,
-                    ),
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Colors.redAccent,
-                      width: 1,
-                    ),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
+                decoration: _buildInputDecoration(
+                  isDarkMode: isDarkMode,
+                  label: 'Contraseña',
+                  hint: '••••••••',
+                  icon: Icons.lock_outline,
                   suffixIcon: IconButton(
                     icon: Icon(
                       _isObscure
@@ -327,7 +300,6 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
                   return null;
                 },
               ),
-
               const SizedBox(height: 12),
 
               // OLVIDÉ MI CONTRASEÑA
@@ -353,14 +325,13 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 24),
 
               // BOTÓN
               SizedBox(
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: isLoading ? null : _submit,
+                  onPressed: authState.isLoading ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1E88E5),
                     foregroundColor: Colors.white,
@@ -372,7 +343,7 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
                         ? Colors.grey[800]
                         : Colors.grey[300],
                   ),
-                  child: isLoading
+                  child: authState.isLoading
                       ? const SizedBox(
                           width: 20,
                           height: 20,
@@ -397,4 +368,338 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
       ),
     );
   }
+}
+
+// FORMULARIO DE REGISTRO
+class _RegisterForm extends ConsumerStatefulWidget {
+  final VoidCallback onToggleMode;
+
+  const _RegisterForm({required this.onToggleMode});
+
+  @override
+  ConsumerState<_RegisterForm> createState() =>
+      _RegisterFormState();
+}
+
+class _RegisterFormState extends ConsumerState<_RegisterForm> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameCtrl = TextEditingController();
+  final _secondNameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  final _confirmPassCtrl = TextEditingController();
+  bool _isObscure = true;
+  bool _isObscureConfirm = true;
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _secondNameCtrl.dispose();
+    _emailCtrl.dispose();
+    _phoneCtrl.dispose();
+    _passCtrl.dispose();
+    _confirmPassCtrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final phoneNumber = _phoneCtrl.text.isNotEmpty
+        ? int.tryParse(_phoneCtrl.text)
+        : null;
+
+    final success = await ref
+        .read(authProvider.notifier)
+        .register(
+          name: _nameCtrl.text.trim(),
+          secondName: _secondNameCtrl.text.trim(),
+          email: _emailCtrl.text.trim(),
+          password: _passCtrl.text,
+          phoneNumber: phoneNumber,
+        );
+
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('¡Registro exitoso! Ahora inicia sesión'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      // Cambiar a modo login
+      widget.onToggleMode();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final isDarkMode =
+        Theme.of(context).brightness == Brightness.dark;
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    final formWidth = isMobile ? double.infinity : 380.0;
+
+    // Mostrar error si existe
+    if (authState.error != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authState.error!),
+            backgroundColor: Colors.red,
+          ),
+        );
+        ref.read(authProvider.notifier).clearError();
+      });
+    }
+
+    return Center(
+      child: SizedBox(
+        width: formWidth,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Crear cuenta',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // NOMBRE
+              TextFormField(
+                controller: _nameCtrl,
+                style: const TextStyle(fontSize: 15),
+                decoration: _buildInputDecoration(
+                  isDarkMode: isDarkMode,
+                  label: 'Nombre',
+                  hint: 'Tu nombre',
+                  icon: Icons.person_outline,
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty)
+                    return 'Requerido';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // APELLIDO
+              TextFormField(
+                controller: _secondNameCtrl,
+                style: const TextStyle(fontSize: 15),
+                decoration: _buildInputDecoration(
+                  isDarkMode: isDarkMode,
+                  label: 'Apellido',
+                  hint: 'Tu apellido',
+                  icon: Icons.person_outline,
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty)
+                    return 'Requerido';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // EMAIL
+              TextFormField(
+                controller: _emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                style: const TextStyle(fontSize: 15),
+                decoration: _buildInputDecoration(
+                  isDarkMode: isDarkMode,
+                  label: 'Email',
+                  hint: 'tu@email.com',
+                  icon: Icons.email_outlined,
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty)
+                    return 'Requerido';
+                  if (!value.contains('@'))
+                    return 'Email inválido';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // TELÉFONO (OPCIONAL)
+              TextFormField(
+                controller: _phoneCtrl,
+                keyboardType: TextInputType.phone,
+                style: const TextStyle(fontSize: 15),
+                decoration: _buildInputDecoration(
+                  isDarkMode: isDarkMode,
+                  label: 'Teléfono (opcional)',
+                  hint: '1234567890',
+                  icon: Icons.phone_outlined,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // CONTRASEÑA
+              TextFormField(
+                controller: _passCtrl,
+                obscureText: _isObscure,
+                style: const TextStyle(fontSize: 15),
+                decoration: _buildInputDecoration(
+                  isDarkMode: isDarkMode,
+                  label: 'Contraseña',
+                  hint: '••••••••',
+                  icon: Icons.lock_outline,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isObscure
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      size: 20,
+                    ),
+                    onPressed: () =>
+                        setState(() => _isObscure = !_isObscure),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty)
+                    return 'Requerido';
+                  if (value.length < 6)
+                    return 'Mínimo 6 caracteres';
+                  if (value.length > 72)
+                    return 'Máximo 72 caracteres';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // CONFIRMAR CONTRASEÑA
+              TextFormField(
+                controller: _confirmPassCtrl,
+                obscureText: _isObscureConfirm,
+                style: const TextStyle(fontSize: 15),
+                decoration: _buildInputDecoration(
+                  isDarkMode: isDarkMode,
+                  label: 'Confirmar contraseña',
+                  hint: '••••••••',
+                  icon: Icons.lock_outline,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isObscureConfirm
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      size: 20,
+                    ),
+                    onPressed: () => setState(
+                      () => _isObscureConfirm = !_isObscureConfirm,
+                    ),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty)
+                    return 'Requerido';
+                  if (value != _passCtrl.text) {
+                    return 'Las contraseñas no coinciden';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 32),
+
+              // BOTÓN
+              SizedBox(
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: authState.isLoading ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E88E5),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                    disabledBackgroundColor: isDarkMode
+                        ? Colors.grey[800]
+                        : Colors.grey[300],
+                  ),
+                  child: authState.isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Crear cuenta',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Función auxiliar para crear decoración de inputs
+InputDecoration _buildInputDecoration({
+  required bool isDarkMode,
+  required String label,
+  required String hint,
+  required IconData icon,
+  Widget? suffixIcon,
+}) {
+  return InputDecoration(
+    labelText: label,
+    hintText: hint,
+    prefixIcon: Icon(icon, size: 20),
+    suffixIcon: suffixIcon,
+    filled: true,
+    fillColor: isDarkMode
+        ? const Color(0xFF0F1629)
+        : const Color(0xFFF8F9FA),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide.none,
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(
+        color: isDarkMode
+            ? Colors.white.withOpacity(0.05)
+            : Colors.grey.withOpacity(0.15),
+        width: 1,
+      ),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(
+        color: Color(0xFF1E88E5),
+        width: 2,
+      ),
+    ),
+    errorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(
+        color: Colors.redAccent,
+        width: 1,
+      ),
+    ),
+    contentPadding: const EdgeInsets.symmetric(
+      horizontal: 16,
+      vertical: 16,
+    ),
+  );
 }
