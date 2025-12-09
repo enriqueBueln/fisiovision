@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fisiovision/models/sesion_model.dart';
+import 'package:fisiovision/services/websocket_service.dart';
+import 'package:camera/camera.dart';
+import 'dart:convert';
 
 class ConnectDeviceView extends StatefulWidget {
   final SesionResponse? sesion;
@@ -20,11 +23,137 @@ class _ConnectDeviceViewState extends State<ConnectDeviceView> {
   final _codeCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  
+  final _wsService = WebSocketService();
+  bool _isConnecting = false;
+  bool _isConnected = false;
+  CameraController? _cameraController;
+  bool _isStreaming = false;
+  int _framesSent = 0;
 
   @override
   void dispose() {
     _codeCtrl.dispose();
+    _wsService.dispose();
+    _cameraController?.dispose();
     super.dispose();
+  }
+
+  Future<void> _initializeCamera() async {
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        throw Exception('No hay cámaras disponibles');
+      }
+
+      _cameraController = CameraController(
+        cameras.first,
+        ResolutionPreset.medium,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg,
+      );
+
+      await _cameraController!.initialize();
+      setState(() {});
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al inicializar cámara: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _connectAndStartStreaming() async {
+    if (widget.sesion == null) return;
+
+    setState(() => _isConnecting = true);
+
+    try {
+      // Conectar WebSocket
+      await _wsService.connectSendFrame(widget.sesion!.id);
+
+      // Inicializar cámara
+      await _initializeCamera();
+
+      setState(() {
+        _isConnected = true;
+        _isConnecting = false;
+      });
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Conectado! Iniciando transmisión...'),
+            ],
+          ),
+          backgroundColor: Color(0xFF43A047),
+        ),
+      );
+
+      // Comenzar a enviar frames
+      _startFrameStreaming();
+    } catch (e) {
+      setState(() => _isConnecting = false);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString().replaceAll('Exception: ', '')}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _startFrameStreaming() async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      return;
+    }
+
+    setState(() => _isStreaming = true);
+
+    // Enviar frames cada 100ms (10 fps)
+    while (_isStreaming && mounted) {
+      try {
+        final image = await _cameraController!.takePicture();
+        final bytes = await image.readAsBytes();
+        final base64Image = base64Encode(bytes);
+
+        _wsService.sendFrame(
+          frameBase64: 'data:image/jpeg;base64,$base64Image',
+          timestamp: DateTime.now().toIso8601String(),
+          frameNumber: _framesSent + 1,
+        );
+
+        setState(() => _framesSent++);
+
+        await Future.delayed(const Duration(milliseconds: 100));
+      } catch (e) {
+        // Ignorar errores individuales de frames
+        print('Error enviando frame: $e');
+      }
+    }
+  }
+
+  void _stopStreaming() {
+    setState(() {
+      _isStreaming = false;
+      _isConnected = false;
+      _framesSent = 0;
+    });
+    _wsService.disconnect();
+    _cameraController?.dispose();
+    _cameraController = null;
   }
 
   Future<void> _handleConnect() async {
@@ -354,7 +483,7 @@ class _ConnectDeviceViewState extends State<ConnectDeviceView> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Espera la conexión automática',
+                              'Presiona "Iniciar Transmisión" abajo',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -369,6 +498,140 @@ class _ConnectDeviceViewState extends State<ConnectDeviceView> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 32),
+
+                // Botón de iniciar transmisión o estado
+                if (!_isConnected)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: _isConnecting ? null : _connectAndStartStreaming,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1E88E5),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        disabledBackgroundColor: isDarkMode
+                            ? Colors.grey[800]
+                            : Colors.grey[300],
+                      ),
+                      child: _isConnecting
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.videocam, size: 24),
+                                const SizedBox(width: 12),
+                                const Text(
+                                  'INICIAR TRANSMISIÓN',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  )
+                else
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF43A047),
+                          const Color(0xFF388E3C),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF43A047).withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 12,
+                              height: 12,
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'TRANSMITIENDO',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        if (_cameraController != null && 
+                            _cameraController!.value.isInitialized)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: SizedBox(
+                              height: 200,
+                              child: CameraPreview(_cameraController!),
+                            ),
+                          ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Frames enviados: $_framesSent',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: _stopStreaming,
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              side: const BorderSide(color: Colors.white, width: 2),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'DETENER',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ] else
                 // Si no hay sesión, mostrar mensaje
                 Container(
