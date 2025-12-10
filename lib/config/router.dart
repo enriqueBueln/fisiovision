@@ -9,6 +9,7 @@ import 'package:fisiovision/screens/patient/patient_screen.dart';
 import 'package:fisiovision/screens/patient/routine-assignment/routineAssigmentScreen.dart';
 import 'package:fisiovision/screens/view_patient/patient/connection_web.dart';
 import 'package:fisiovision/screens/view_patient/patient/laptop_feedback.dart';
+import 'package:fisiovision/screens/view_patient/patient/laptop_viewer_screen.dart';
 import 'package:fisiovision/screens/view_patient/patient/mobile_camera_view.dart';
 import 'package:fisiovision/screens/view_patient/patient/patient_home_screen.dart';
 import 'package:fisiovision/models/sesion_model.dart';
@@ -28,6 +29,12 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final isLoggedIn = authState.isAuthenticated;
       final isGoingToLogin = state.matchedLocation == '/login';
+      final isLaptopViewer = state.matchedLocation == '/laptop-viewer';
+
+      // Permitir acceso a laptop-viewer sin autenticación
+      if (isLaptopViewer) {
+        return null;
+      }
 
       // Si no está logueado y no va al login, redirigir al login
       if (!isLoggedIn && !isGoingToLogin) {
@@ -84,11 +91,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/camera-mobile',
-        builder: (context, state) => const MobileCameraView(),
+        builder: (context, state) {
+          final sessionId = state.extra as int?;
+          return MobileCameraView(sessionId: sessionId);
+        },
       ),
       GoRoute(
         path: '/laptop-feedback',
-        builder: (context, state) => const LaptopFeedbackView(),
+        builder: (context, state) {
+          final sessionId = state.extra as int?;
+          return LaptopFeedbackView(sessionId: sessionId);
+        },
+      ),
+      GoRoute(
+        path: '/laptop-viewer',
+        builder: (context, state) => const LaptopViewerScreen(),
       ),
 
       // RUTAS DE EJERCICIOS
@@ -147,11 +164,21 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/camera-mobile',
-      builder: (context, state) => const MobileCameraView(),
+      builder: (context, state) {
+        final sessionId = state.extra as int?;
+        return MobileCameraView(sessionId: sessionId);
+      },
     ),
     GoRoute(
       path: '/laptop-feedback',
-      builder: (context, state) => const LaptopFeedbackView(),
+      builder: (context, state) {
+        final sessionId = state.extra as int?;
+        return LaptopFeedbackView(sessionId: sessionId);
+      },
+    ),
+    GoRoute(
+      path: '/laptop-viewer',
+      builder: (context, state) => const LaptopViewerScreen(),
     ),
     GoRoute(
       path: '/historial',

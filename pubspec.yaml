@@ -25,7 +25,9 @@ dependencies:
   http: ^1.1.0 # Para llamadas a API
   riverpod: ^3.0.3
   provider: ^6.1.5+1
-  intl: ^0.20.2
+  web_socket_channel: ^3.0.1
+  flutter_tts: ^4.2.0
+  speech_to_text: ^7.0.0
 
 dev_dependencies:
   flutter_test:

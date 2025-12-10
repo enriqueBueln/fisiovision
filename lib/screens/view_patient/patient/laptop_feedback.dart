@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:fisiovision/services/websocket_service.dart';
+import 'dart:convert';
 
 class LaptopFeedbackView extends StatefulWidget {
-  const LaptopFeedbackView({super.key});
+  final int? sessionId;
+  
+  const LaptopFeedbackView({
+    super.key,
+    this.sessionId,
+  });
 
   @override
   State<LaptopFeedbackView> createState() =>
@@ -10,11 +17,93 @@ class LaptopFeedbackView extends StatefulWidget {
 }
 
 class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
+  final _wsService = WebSocketService();
   bool _isSessionActive = true;
   int _currentReps = 8;
   int _totalReps = 15;
   double _currentAngle = 85.0;
   int _elapsedSeconds = 45;
+  
+  String? _currentFrameBase64;
+  int _frameCount = 0;
+  Map<String, dynamic>? _latestAnalysis;
+
+  @override
+  void initState() {
+    super.initState();
+    print('🎬 [LaptopFeedback] initState - sessionId recibido: ${widget.sessionId}');
+    _connectToStream();
+  }
+
+  @override
+  void dispose() {
+    _wsService.dispose();
+    super.dispose();
+  }
+
+  Future<void> _connectToStream() async {
+    if (widget.sessionId == null) {
+      print('❌ No hay sessionId');
+      return;
+    }
+
+    print('🔌 Intentando conectar a analysis-stream para sesión ${widget.sessionId}');
+
+    try {
+      await _wsService.connectAnalysisStream(widget.sessionId!);
+      print('✅ Conectado a WebSocket analysis-stream');
+      print('🎧 Escuchando stream...');
+
+      _wsService.stream.listen(
+        (data) {
+          print('📨 Mensaje recibido del WebSocket');
+          print('   Tipo: ${data['type']}');
+          
+          if (mounted && data['type'] != 'ping' && data['type'] != 'pong') {
+            print('📦 Datos recibidos: ${data.keys}');
+            if (data['frame_procesado'] != null) {
+              final frameStr = data['frame_procesado'] as String;
+              final framePreview = frameStr.length > 50 ? frameStr.substring(0, 50) : frameStr;
+              print('🖼️ Frame recibido (${frameStr.length} chars): $framePreview...');
+            }
+            
+            setState(() {
+              _latestAnalysis = data;
+              _currentFrameBase64 = data['frame_procesado'];
+              _frameCount = data['frame_number'] ?? _frameCount + 1;
+              
+              // Actualizar ángulos si están disponibles
+              if (data['angulos'] != null) {
+                final angulos = data['angulos'] as Map<String, dynamic>;
+                if (angulos.isNotEmpty) {
+                  // angulos tiene estructura: {codo: {izquierdo: 145.2, derecho: 148.7}}
+                  final firstJoint = angulos.values.first;
+                  if (firstJoint is Map) {
+                    final firstValue = (firstJoint as Map<String, dynamic>).values.first;
+                    if (firstValue is num) {
+                      _currentAngle = firstValue.toDouble();
+                    }
+                  } else if (firstJoint is num) {
+                    _currentAngle = firstJoint.toDouble();
+                  }
+                }
+              }
+            });
+          } else {
+            print('⏭️ Ignorando mensaje tipo: ${data['type']}');
+          }
+        },
+        onError: (error) {
+          print('❌ Error en WebSocket: $error');
+        },
+        onDone: () {
+          print('🔚 WebSocket cerrado');
+        },
+      );
+    } catch (e) {
+      print('❌ Error conectando a stream: $e');
+    }
+  }
 
   void _endSession() {
     showDialog(
@@ -103,6 +192,8 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
 
   @override
   Widget build(BuildContext context) {
+    print('🎨 [LaptopFeedback] build - sessionId: ${widget.sessionId}, frameCount: $_frameCount, hasFrame: ${_currentFrameBase64 != null}');
+    
     final isDarkMode =
         Theme.of(context).brightness == Brightness.dark;
     final angleColor = _getAngleColor();
@@ -196,37 +287,65 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
                 borderRadius: BorderRadius.circular(16),
                 child: Stack(
                   children: [
-                    // Placeholder del Video
-                    Container(
-                      color: isDarkMode
-                          ? const Color(0xFF0F172A)
-                          : const Color(0xFFF8FAFC),
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment:
-                              MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.videocam_outlined,
-                              size: 80,
-                              color: isDarkMode
-                                  ? const Color(0xFF475569)
-                                  : const Color(0xFFCBD5E1),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Vista de cámara',
-                              style: TextStyle(
-                                color: isDarkMode
-                                    ? const Color(0xFF64748B)
-                                    : const Color(0xFF94A3B8),
-                                fontSize: 16,
+                    // Frame de video
+                    if (_currentFrameBase64 != null)
+                      Image.memory(
+                        base64Decode(
+                          _currentFrameBase64!.contains(',')
+                              ? _currentFrameBase64!.split(',').last
+                              : _currentFrameBase64!,
+                        ),
+                        fit: BoxFit.contain,
+                        width: double.infinity,
+                        height: double.infinity,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.red.shade900,
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.error, color: Colors.white, size: 48),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Error al decodificar imagen',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                  Text(
+                                    error.toString(),
+                                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
+                          );
+                        },
+                      )
+                    else
+                      Container(
+                        color: isDarkMode
+                            ? const Color(0xFF0F172A)
+                            : const Color(0xFFF8FAFC),
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment:
+                                MainAxisAlignment.center,
+                            children: [
+                              const CircularProgressIndicator(),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Esperando frames del móvil...',
+                                style: TextStyle(
+                                  color: isDarkMode
+                                      ? const Color(0xFF64748B)
+                                      : const Color(0xFF94A3B8),
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
 
                     // Indicador IA
                     Positioned(
