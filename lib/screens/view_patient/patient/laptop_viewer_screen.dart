@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:fisiovision/services/websocket_service.dart';
 import 'package:fisiovision/services/sesion_service.dart';
 import 'package:fisiovision/models/sesion_model.dart';
@@ -46,39 +47,10 @@ class _LaptopViewerScreenState extends State<LaptopViewerScreen> {
       // Verificar estado del stream
       final streamStatus = await _sesionService.getStreamStatus(sessionId);
 
-      if (!mounted) return;
-
-      // Conectar WebSocket para recibir análisis
-      await _wsService.connectAnalysisStream(sessionId);
-
-      // Escuchar análisis en tiempo real
-      _wsService.stream.listen(
-        (data) {
-          if (mounted && data['type'] != 'ping' && data['type'] != 'pong') {
-            setState(() {
-              _latestAnalysis = data;
-              _currentFrameBase64 = data['frame_procesado'];
-              _frameCount = data['frame_number'] ?? _frameCount + 1;
-            });
-          }
-        },
-        onError: (error) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Error en WebSocket: $error'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        },
-      );
-
       setState(() {
         _isConnected = true;
         _isConnecting = false;
       });
-
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -87,12 +59,21 @@ class _LaptopViewerScreenState extends State<LaptopViewerScreen> {
             children: [
               const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 12),
-              Text('Conectado a sesión #$sessionId'),
+              Text('Sesión verificada! Redirigiendo...'),
             ],
           ),
           backgroundColor: const Color(0xFF43A047),
+          duration: const Duration(seconds: 1),
         ),
       );
+
+      // Redirigir a laptop-feedback con el ID de sesión
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      if (!mounted) return;
+      
+      print('🚀 Redirigiendo a laptop-feedback con sessionId: $sessionId');
+      context.push('/laptop-feedback', extra: sessionId);
     } catch (e) {
       setState(() => _isConnecting = false);
 

@@ -6,6 +6,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Servicio para manejar conexiones WebSocket con el backend
 class WebSocketService {
+  // Singleton pattern
+  static final WebSocketService _instance = WebSocketService._internal();
+  factory WebSocketService() => _instance;
+  WebSocketService._internal();
+
   static String get baseUrl =>
       dotenv.env['DATABASE_URL'] ?? 'http://localhost:8000';
   
@@ -43,7 +48,7 @@ class WebSocketService {
 
     try {
       final token = await _getToken();
-      final url = '$wsUrl/sesion/ws/$sessionId/send-frame';
+      final url = '$wsUrl/api/v1/sesiones/ws/$sessionId/send-frame';
       
       _channel = WebSocketChannel.connect(
         Uri.parse(url),
@@ -84,13 +89,17 @@ class WebSocketService {
   /// Conectar para recibir análisis (laptop)
   /// WebSocket: /ws/{id_sesion}/analysis-stream
   Future<void> connectAnalysisStream(int sessionId) async {
+    print('🔌 [WebSocketService] Intentando conectar analysis-stream para sesión $sessionId');
+    
     if (_isConnected) {
+      print('⚠️ [WebSocketService] Ya hay una conexión activa, desconectando...');
       await disconnect();
     }
 
     try {
       final token = await _getToken();
-      final url = '$wsUrl/sesion/ws/$sessionId/analysis-stream';
+      final url = '$wsUrl/api/v1/sesiones/ws/$sessionId/analysis-stream';
+      print('🌐 [WebSocketService] URL: $url');
       
       _channel = WebSocketChannel.connect(
         Uri.parse(url),
@@ -101,32 +110,37 @@ class WebSocketService {
 
       _subscription = _channel!.stream.listen(
         (message) {
+          print('📥 [WebSocketService] Mensaje recibido (${(message as String).length} chars)');
           try {
-            final data = jsonDecode(message as String);
+            final data = jsonDecode(message);
+            print('📦 [WebSocketService] Datos parseados: ${data.keys}');
             
             // Responder a pings
             if (data['type'] == 'ping') {
+              print('🏓 [WebSocketService] Ping recibido, enviando pong');
               sendMessage({'type': 'pong'});
             } else {
+              print('➡️ [WebSocketService] Enviando datos al controller');
               _controller.add(data);
             }
           } catch (e) {
-            print('Error parseando mensaje WebSocket: $e');
+            print('❌ [WebSocketService] Error parseando mensaje: $e');
+            print('   Mensaje raw: ${message.toString().substring(0, 100)}...');
           }
         },
         onError: (error) {
-          print('Error en WebSocket: $error');
+          print('❌ [WebSocketService] Error en WebSocket: $error');
           _isConnected = false;
           _controller.addError(error);
         },
         onDone: () {
-          print('WebSocket cerrado');
+          print('🔚 [WebSocketService] WebSocket cerrado');
           _isConnected = false;
           _currentSessionId = null;
         },
       );
 
-      print('WebSocket conectado para análisis - Sesión: $sessionId');
+      print('✅ [WebSocketService] WebSocket conectado para análisis - Sesión: $sessionId');
       
       // Enviar ping inicial
       _startPingTimer();
@@ -153,6 +167,9 @@ class WebSocketService {
     required String frameBase64,
     required String timestamp,
     required int frameNumber,
+    bool? showSkeleton,
+    bool? showAngles,
+    List<String>? specificAngles,
   }) {
     if (!_isConnected) {
       throw Exception('WebSocket no está conectado');
@@ -162,6 +179,9 @@ class WebSocketService {
       'frame': frameBase64,
       'timestamp': timestamp,
       'frame_number': frameNumber,
+      if (showSkeleton != null) 'show_skeleton': showSkeleton,
+      if (showAngles != null) 'show_angles': showAngles,
+      if (specificAngles != null) 'specific_angles': specificAngles,
     };
 
     _channel!.sink.add(jsonEncode(message));

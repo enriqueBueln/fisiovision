@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fisiovision/models/sesion_model.dart';
 import 'package:fisiovision/services/websocket_service.dart';
@@ -76,9 +77,6 @@ class _ConnectDeviceViewState extends State<ConnectDeviceView> {
       // Conectar WebSocket
       await _wsService.connectSendFrame(widget.sesion!.id);
 
-      // Inicializar cámara
-      await _initializeCamera();
-
       setState(() {
         _isConnected = true;
         _isConnecting = false;
@@ -92,15 +90,21 @@ class _ConnectDeviceViewState extends State<ConnectDeviceView> {
             children: [
               Icon(Icons.check_circle, color: Colors.white),
               SizedBox(width: 12),
-              Text('Conectado! Iniciando transmisión...'),
+              Text('Conectado! Redirigiendo...'),
             ],
           ),
           backgroundColor: Color(0xFF43A047),
+          duration: Duration(seconds: 1),
         ),
       );
 
-      // Comenzar a enviar frames
-      _startFrameStreaming();
+      // Redirigir a mobile-camera con el ID de sesión
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      if (!mounted) return;
+    
+      context.push('/camera-mobile', extra: widget.sesion!.id);
+      
     } catch (e) {
       setState(() => _isConnecting = false);
 

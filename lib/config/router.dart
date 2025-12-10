@@ -85,11 +85,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/camera-mobile',
-        builder: (context, state) => const MobileCameraView(),
+        builder: (context, state) {
+          final sessionId = state.extra as int?;
+          return MobileCameraView(sessionId: sessionId);
+        },
       ),
       GoRoute(
         path: '/laptop-feedback',
-        builder: (context, state) => const LaptopFeedbackView(),
+        builder: (context, state) {
+          final sessionId = state.extra as int?;
+          return LaptopFeedbackView(sessionId: sessionId);
+        },
       ),
       GoRoute(
         path: '/laptop-viewer',
@@ -148,11 +154,21 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/camera-mobile',
-      builder: (context, state) => const MobileCameraView(),
+      builder: (context, state) {
+        final sessionId = state.extra as int?;
+        return MobileCameraView(sessionId: sessionId);
+      },
     ),
     GoRoute(
       path: '/laptop-feedback',
-      builder: (context, state) => const LaptopFeedbackView(),
+      builder: (context, state) {
+        final sessionId = state.extra as int?;
+        return LaptopFeedbackView(sessionId: sessionId);
+      },
+    ),
+    GoRoute(
+      path: '/laptop-viewer',
+      builder: (context, state) => const LaptopViewerScreen(),
     ),
 
     // RUTAS DE EJERCICIOS
