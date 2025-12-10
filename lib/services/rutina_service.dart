@@ -1,24 +1,50 @@
 import 'dart:convert';
-import 'package:fisiovision/models/ejercicio_asignado.dart';
+import 'package:fisiovision/config/token.dart';
+import 'package:fisiovision/models/ejercicio_model.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class RutinasService {
-  final String baseUrl = "https://tu-api.com/api";
+// --- SERVICIO ---
+class RutinaService {
+  final String baseUrl = "http://localhost:8000/api/v1";
 
-  // POST: Asignar una lista de ejercicios a un paciente
-  Future<void> asignarRutina(List<EjercicioAsignado> asignaciones) async {
-    // Si tu backend soporta "Batch Insert" (insertar varios de golpe):
-    final response = await http.post(
-      Uri.parse('$baseUrl/ejercicios-asignados/batch'),
-      headers: {"Content-Type": "application/json"},
-      body: json.encode(asignaciones.map((e) => e.toJson()).toList()),
+  // Obtener los ejercicios asignados a un paciente específico
+  Future<List<Ejercicio>> getRutinaPaciente(int idPaciente) async {
+    // Ajusta el endpoint según tu backend real
+    final response = await http.get(
+      Uri.parse('$baseUrl/ejercicios-asignados/paciente/$idPaciente'),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${await getData('access_token')}",
+      },
     );
-
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Error al asignar rutina');
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      return data.map((json) => Ejercicio.fromJson(json)).toList();
     }
+    return []; // Retorna lista vacía si falla o no hay nada por ahora
+  }
+
+  // Asignar un ejercicio existente a un paciente
+  Future<void> asignarEjercicio(
+    int idPaciente,
+    int idEjercicio,
+    int asignedBy,
+  ) async {
+    print("asignando $idEjercicio to paciente $idPaciente by $asignedBy");
+    await http.post(
+      Uri.parse('$baseUrl/ejercicios-asignados/'),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${await getData('access_token')}",
+      },
+      body: json.encode({
+        "id_paciente": idPaciente,
+        "id_ejercicio": idEjercicio,
+        "assigned_by": asignedBy,
+        "date_assigned": DateTime.now().toString().split(' ')[0],
+        "notes": "No notas",
+        "is_active": true,
+      }),
+    );
   }
 }
-
-final rutinasServiceProvider = Provider((ref) => RutinasService());

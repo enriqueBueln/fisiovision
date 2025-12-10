@@ -3,6 +3,7 @@ import 'package:fisiovision/providers/auth_provider.dart';
 import 'package:fisiovision/screens/exercises/exercise_form.dart';
 import 'package:fisiovision/screens/exercises/exercise_sreen.dart';
 import 'package:fisiovision/screens/login/login_screen.dart';
+import 'package:fisiovision/screens/patient/patient_detail_screen.dart';
 import 'package:fisiovision/screens/patient/patient_form_screen.dart';
 import 'package:fisiovision/screens/patient/patient_screen.dart';
 import 'package:fisiovision/screens/patient/routine-assignment/routineAssigmentScreen.dart';
@@ -44,15 +45,19 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       // RUTA DE AUTENTICACIÓN (Login/Register)
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
-
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       // RUTA PARA TERAPEUTAS
       GoRoute(
         path: '/pacientes',
         builder: (context, state) => const PatientScreen(),
+      ),
+      GoRoute(
+        path: '/paciente/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+
+          return PatientDetailScreen(pacienteId: int.parse(id));
+        },
       ),
       GoRoute(
         path: '/paciente/nuevo',
@@ -60,8 +65,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/asignacion-rutina',
-        builder: (context, state) =>
-            const RoutineAssignmentScreen(),
+        builder: (context, state) => const RoutineAssignmentScreen(),
       ),
 
       // RUTA PARA PACIENTES
@@ -104,11 +108,15 @@ final appRouter = GoRouter(
   initialLocation: '/login',
   routes: [
     // RUTA DE AUTENTICACIÓN (Login/Register)
+    GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginScreen(),
-    ),
+      path: '/paciente/:id',
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
 
+        return PatientDetailScreen(pacienteId: int.parse(id));
+      },
+    ),
     // RUTA PARA TERAPEUTAS
     GoRoute(
       path: '/pacientes',

@@ -25,7 +25,6 @@ dependencies:
   http: ^1.1.0 # Para llamadas a API
   riverpod: ^3.0.3
   provider: ^6.1.5+1
-
 dev_dependencies:
   flutter_test:
     sdk: flutter

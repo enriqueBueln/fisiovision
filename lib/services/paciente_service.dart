@@ -5,7 +5,8 @@ import 'package:riverpod/riverpod.dart';
 import '../models/paciente_model.dart';
 
 class PacienteService {
-  final String baseUrl = "http://localhost:8000/api/v1"; // Cambiar por la URL real de la API
+  final String baseUrl =
+      "http://localhost:8000/api/v1"; // Cambiar por la URL real de la API
 
   // GET: Obtener pacientes
   Future<List<Paciente>> getPacientes() async {
@@ -26,6 +27,22 @@ class PacienteService {
     }
   }
 
+  Future<Paciente> getPacienteById(int id) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/pacientes/$id'),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${await getData('access_token')}",
+      },
+    );
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      return Paciente.fromJson(data);
+    } else {
+      throw Exception('Error al cargar paciente con ID $id');
+    }
+  }
+
   // POST: Crear paciente (o enviar video más adelante)
   Future<void> addPaciente(Paciente paciente) async {
     String token = await getData('access_token');
@@ -33,7 +50,10 @@ class PacienteService {
     print('Enviando paciente: ${paciente.toJson()}');
     final response = await http.post(
       Uri.parse('$baseUrl/pacientes'),
-      headers: {"Content-Type": "application/json", "Authorization": "Bearer $token"},
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
       body: json.encode(paciente.toJson()),
     );
 

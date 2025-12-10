@@ -29,7 +29,25 @@ class PacientesNotifier extends StateNotifier<AsyncValue<List<Paciente>>> {
     // Y luego recargas la lista
     cargarPacientes();
   }
+
+  Future<Paciente> getPacienteById(int id) async {
+    return _apiService.getPacienteById(id);
+  }
 }
+
+// Provider que recibe un ID y devuelve un Future<Paciente>
+final pacienteDetalleProvider = FutureProvider.family.autoDispose<Paciente, int>((ref, id) async {
+  // Aquí usamos tu servicio existente para buscar por ID
+  // Si tu API no tiene endpoint por ID, tendrás que buscarlo en la lista local
+  final apiService = ref.watch(pacienteServiceProvider);
+  
+  // OPCIÓN A: Si tu API tiene endpoint GET /pacientes/:id
+  // return apiService.getPacienteById(id); 
+  
+  // OPCIÓN B (Más probable por ahora): Buscamos en la lista que ya tienes
+  final listaPacientes = await apiService.getPacientes();
+  return listaPacientes.firstWhere((p) => p.id == id);
+});
 
 // 2. EL PROVIDER GLOBAL: Lo que usarás en tus Vistas
 final pacientesProvider =
