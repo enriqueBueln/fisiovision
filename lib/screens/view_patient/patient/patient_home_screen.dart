@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:fisiovision/models/patients_model.dart';
 import 'package:fisiovision/models/sesion_model.dart';
+import 'package:fisiovision/models/profile_model.dart';
 import 'package:fisiovision/services/sesion_service.dart';
 import 'package:fisiovision/services/auth_service.dart';
+import 'package:fisiovision/services/profile_service.dart';
 
 class PatientHomeScreen extends StatelessWidget {
   const PatientHomeScreen({super.key});
@@ -26,8 +28,43 @@ class PatientHomeScreen extends StatelessWidget {
   }
 }
 
-class _PatientDrawer extends StatelessWidget {
+class _PatientDrawer extends StatefulWidget {
   const _PatientDrawer();
+
+  @override
+  State<_PatientDrawer> createState() => _PatientDrawerState();
+}
+
+class _PatientDrawerState extends State<_PatientDrawer> {
+  final ProfileService _profileService = ProfileService();
+  PatientProfileModel? _profile;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final profile = await _profileService.getPatientInfo();
+      if (mounted) {
+        setState(() {
+          _profile = profile;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString().replaceAll('Exception: ', '');
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,38 +84,74 @@ class _PatientDrawer extends StatelessWidget {
                   ? const Color(0xFF0F172A)
                   : const Color(0xFF1E88E5),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 CircleAvatar(
                   radius: 32,
                   backgroundColor: Colors.white,
-                  child: Icon(
-                    Icons.person,
-                    size: 36,
-                    color: Color(0xFF1E88E5),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF1E88E5),
+                          ),
+                        )
+                      : Text(
+                          _profile != null
+                              ? _profile!.name[0].toUpperCase()
+                              : 'P',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1E88E5),
+                          ),
+                        ),
                 ),
-                SizedBox(height: 12),
-                Text(
-                  'Mi Perfil',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                const SizedBox(height: 12),
+                if (_isLoading)
+                  const Text(
+                    'Cargando...',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  )
+                else if (_error != null)
+                  Text(
+                    'Error al cargar perfil',
+                    style: TextStyle(
+                      color: Colors.red[200],
+                      fontSize: 14,
+                    ),
+                  )
+                else if (_profile != null) ...[
+                  Text(
+                    _profile!.fullName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _profile!.email,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 13,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ],
             ),
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.home_outlined,
-              color: Color(0xFF1E88E5),
-            ),
-            title: const Text('Inicio'),
-            onTap: () => Navigator.pop(context),
           ),
           ListTile(
             leading: const Icon(
@@ -86,7 +159,10 @@ class _PatientDrawer extends StatelessWidget {
               color: Color(0xFF1E88E5),
             ),
             title: const Text('Mis Ejercicios'),
-            onTap: () => Navigator.pop(context),
+            onTap: () {
+              Navigator.pop(context);
+              context.go('/home');
+            },
           ),
           ListTile(
             leading: const Icon(
@@ -94,17 +170,12 @@ class _PatientDrawer extends StatelessWidget {
               color: Color(0xFF1E88E5),
             ),
             title: const Text('Historial'),
-            onTap: () => Navigator.pop(context),
+            onTap: () {
+              Navigator.pop(context);
+              context.push('/historial');
+            },
           ),
           const Divider(),
-          ListTile(
-            leading: const Icon(
-              Icons.settings_outlined,
-              color: Color(0xFF64748B),
-            ),
-            title: const Text('Configuración'),
-            onTap: () => Navigator.pop(context),
-          ),
         ],
       ),
     );
@@ -223,8 +294,6 @@ class AssignedExercisesView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 32),
-
-              // Lista de Ejercicios
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -248,7 +317,6 @@ class AssignedExercisesView extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-
               ...provider.exercises.map(
                 (exercise) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
@@ -288,12 +356,13 @@ class _ExerciseCardState extends State<_ExerciseCard> {
     try {
       final sesionService = SesionService();
       final authService = AuthService();
-      
-      // Obtener el ID del paciente desde el token JWT
+
       final userId = await authService.getUserIdFromToken();
-      
+
       if (userId == null) {
-        throw Exception('No se pudo obtener el ID del usuario. Por favor, inicia sesión nuevamente.');
+        throw Exception(
+          'No se pudo obtener el ID del usuario. Por favor, inicia sesión nuevamente.',
+        );
       }
 
       final sesionCreate = SesionCreate(
@@ -314,10 +383,7 @@ class _ExerciseCardState extends State<_ExerciseCard> {
         SnackBar(
           content: Row(
             children: [
-              const Icon(
-                Icons.error_outline,
-                color: Colors.white,
-              ),
+              const Icon(Icons.error_outline, color: Colors.white),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -341,7 +407,10 @@ class _ExerciseCardState extends State<_ExerciseCard> {
     }
   }
 
-  void _showSuccessAndNavigate(BuildContext context, SesionResponse sesion) {
+  void _showSuccessAndNavigate(
+    BuildContext context,
+    SesionResponse sesion,
+  ) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -352,7 +421,9 @@ class _ExerciseCardState extends State<_ExerciseCard> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text('Sesión iniciada: ${sesion.ejercicio?.name ?? "Ejercicio"}'),
+              child: Text(
+                'Sesión iniciada: ${sesion.ejercicio?.name ?? "Ejercicio"}',
+              ),
             ),
           ],
         ),
@@ -365,7 +436,6 @@ class _ExerciseCardState extends State<_ExerciseCard> {
       ),
     );
 
-    // Navegar a la pantalla de conexión, pasando la sesión
     context.push('/connect-device', extra: sesion);
   }
 
@@ -375,7 +445,9 @@ class _ExerciseCardState extends State<_ExerciseCard> {
 
     return Container(
       decoration: BoxDecoration(
-        color: widget.isDarkMode ? const Color(0xFF1A1F3A) : Colors.white,
+        color: widget.isDarkMode
+            ? const Color(0xFF1A1F3A)
+            : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isCompleted
@@ -397,7 +469,6 @@ class _ExerciseCardState extends State<_ExerciseCard> {
         padding: const EdgeInsets.all(20),
         child: Row(
           children: [
-            // Icono
             Container(
               width: 56,
               height: 56,
@@ -418,8 +489,6 @@ class _ExerciseCardState extends State<_ExerciseCard> {
               ),
             ),
             const SizedBox(width: 16),
-
-            // Información
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -466,11 +535,11 @@ class _ExerciseCardState extends State<_ExerciseCard> {
                 ],
               ),
             ),
-
-            // Botón de acción
             if (!isCompleted)
               ElevatedButton(
-                onPressed: _isStarting ? null : () => _handleStartExercise(context),
+                onPressed: _isStarting
+                    ? null
+                    : () => _handleStartExercise(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF3B82F6),
                   foregroundColor: Colors.white,
