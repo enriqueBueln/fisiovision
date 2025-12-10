@@ -50,22 +50,22 @@ class Ejercicio {
   }
 
   factory Ejercicio.fromJson(Map<String, dynamic> json) {
+    print("AAAAAAAAAAAAAAAAAAAA $json");
     return Ejercicio(
       id: json['id'],
       name: json['name'],
       description: json['description'],
       type:
-          json['type'], // Asumiendo que DB devuelve "Fuerza", "Cardio", etc.
-      duration_seconds: json['duration_seconds'],
-      repetitions: json['repetitions'],
-      series: json['series'],
-      objective_angles: json['objective_angles'], // JSON String
-      tolerance_degrees: (json['tolerance_degrees'] as num)
-          .toDouble(),
-      instructions: json['instructions'],
-      precautions: json['precautions'],
-      reference_image: json['reference_image'],
-      reference_video: json['reference_video'],
+          json['type'] ?? 'aaaaaa', // Asumiendo que DB devuelve "Fuerza", "Cardio", etc.
+      duration_seconds: json['duration_seconds'] ?? 0,
+      repetitions: json['repetitions'] ?? 0,
+      series: json['series'] ?? 0,
+      objective_angles: json['objective_angles'] ?? ' ', // JSON String
+      tolerance_degrees: (json['tolerance_degrees'] as num?)?.toDouble() ?? 0.0,
+      instructions: json['instructions'] ?? 'asdasdasd ',
+      precautions: json['precautions'] ?? 'dasdasd ',
+      reference_image: json['reference_image'] ?? ' dasdasdas',
+      reference_video: json['reference_video'] ?? 'sdasdas ',
       isActive: json['isActive'] ?? true,
     );
   }

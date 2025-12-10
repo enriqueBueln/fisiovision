@@ -6,7 +6,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 // Enum para tipos de ejercicio
-enum TypeExercise { Fuerza, Cardio, Flexibilidad, Equilibrio }
+enum TypeExercise {
+  fuerza,
+  movilidad,
+  equilibrio,
+  rotacion,
+  extension,
+  flexion,
+  otro,
+}
 
 class ExerciseFormScreen extends ConsumerStatefulWidget {
   const ExerciseFormScreen({super.key});
@@ -36,7 +44,7 @@ class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
   final _toleranciaCtrl = TextEditingController();
 
   // Estado
-  TypeExercise _tipoEjercicio = TypeExercise.Fuerza;
+  TypeExercise _tipoEjercicio = TypeExercise.fuerza;
   bool _isLoading = false;
 
   @override
@@ -56,27 +64,39 @@ class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
 
   Color _getTypeColor(TypeExercise type) {
     switch (type) {
-      case TypeExercise.Fuerza:
+      case TypeExercise.fuerza:
         return const Color(0xFFE53935);
-      case TypeExercise.Cardio:
+      case TypeExercise.movilidad:
         return const Color(0xFF43A047);
-      case TypeExercise.Flexibilidad:
+      case TypeExercise.equilibrio:
         return const Color(0xFF1E88E5);
-      case TypeExercise.Equilibrio:
+      case TypeExercise.rotacion:
         return const Color(0xFF8E24AA);
+      case TypeExercise.extension:
+        return const Color(0xFFFFB300);
+      case TypeExercise.flexion:
+        return const Color(0xFF00ACC1);
+      case TypeExercise.otro:
+        return const Color(0xFF6D4C41);
     }
   }
 
   String _getTypeText(TypeExercise type) {
     switch (type) {
-      case TypeExercise.Fuerza:
+      case TypeExercise.fuerza:
         return 'Fuerza 💪';
-      case TypeExercise.Cardio:
-        return 'Cardio 🏃';
-      case TypeExercise.Flexibilidad:
-        return 'Flexibilidad 🤸';
-      case TypeExercise.Equilibrio:
-        return 'Equilibrio ⚖️';
+      case TypeExercise.movilidad:
+        return 'Movilidad 🏃';
+      case TypeExercise.equilibrio:
+        return 'Equilibrio 🤸';
+      case TypeExercise.rotacion:
+        return 'Rotación 🔄';
+      case TypeExercise.extension:
+        return 'Extensión ➡️';
+      case TypeExercise.flexion:
+        return 'Flexión ⬅️';
+      case TypeExercise.otro:
+        return 'Otro ❓';
     }
   }
 
@@ -151,7 +171,6 @@ class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
 
     return Scaffold(
       backgroundColor: isDarkMode
