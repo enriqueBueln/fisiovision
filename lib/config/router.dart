@@ -11,6 +11,8 @@ import 'package:fisiovision/screens/view_patient/patient/laptop_feedback.dart';
 import 'package:fisiovision/screens/view_patient/patient/mobile_camera_view.dart';
 import 'package:fisiovision/screens/view_patient/patient/patient_home_screen.dart';
 import 'package:fisiovision/models/sesion_model.dart';
+import 'package:fisiovision/screens/view_patient/patient/session_analysis_screen.dart';
+import 'package:fisiovision/screens/view_patient/patient/session_history_screen.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -143,7 +145,10 @@ final appRouter = GoRouter(
       path: '/laptop-feedback',
       builder: (context, state) => const LaptopFeedbackView(),
     ),
-
+    GoRoute(
+      path: '/historial',
+      builder: (context, state) => const SessionHistoryScreen(),
+    ),
     // RUTAS DE EJERCICIOS
     GoRoute(
       path: '/ejercicios',
@@ -152,6 +157,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/ejercicio/nuevo',
       builder: (context, state) => const ExerciseFormScreen(),
+    ),
+    GoRoute(
+      path: '/sesionanalisis',
+      builder: (context, state) => const SessionAnalysisScreen(),
     ),
   ],
 );
