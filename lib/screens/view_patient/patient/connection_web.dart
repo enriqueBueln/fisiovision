@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:fisiovision/models/sesion_model.dart';
 
 class ConnectDeviceView extends StatefulWidget {
-  const ConnectDeviceView({super.key});
+  final SesionResponse? sesion;
+  
+  const ConnectDeviceView({
+    super.key,
+    this.sesion,
+  });
 
   @override
   State<ConnectDeviceView> createState() =>
@@ -53,9 +59,13 @@ class _ConnectDeviceViewState extends State<ConnectDeviceView> {
         ),
       );
 
-      // Aquí puedes navegar a la siguiente pantalla
-      // context.push('/camera-session');
+      // Aquí puedes navegar a la siguiente pantalla con la sesión
+      // context.push('/camera-session', extra: widget.sesion);
       print("Conectando con código: ${_codeCtrl.text}");
+      if (widget.sesion != null) {
+        print("Sesión ID: ${widget.sesion!.id}");
+        print("Ejercicio: ${widget.sesion!.ejercicio?.name}");
+      }
     }
   }
 
@@ -115,7 +125,7 @@ class _ConnectDeviceViewState extends State<ConnectDeviceView> {
 
               // Título principal
               Text(
-                "Conectar con Laptop",
+                "Código de Conexión",
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -132,7 +142,7 @@ class _ConnectDeviceViewState extends State<ConnectDeviceView> {
                   horizontal: 20,
                 ),
                 child: Text(
-                  "Ingresa el código que aparece en tu pantalla grande para sincronizar la cámara.",
+                  "Ingresa este código en tu laptop para conectar la cámara.",
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
@@ -145,11 +155,225 @@ class _ConnectDeviceViewState extends State<ConnectDeviceView> {
               ),
               const SizedBox(height: 40),
 
-              // Tarjeta de formulario mejorada
-              Container(
-                constraints: const BoxConstraints(maxWidth: 500),
-                child: Container(
-                  padding: const EdgeInsets.all(32),
+              // Mostrar ID de sesión en grande
+              if (widget.sesion != null) ...[
+                Container(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  padding: const EdgeInsets.all(40),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFF1E88E5),
+                        const Color(0xFF1976D2),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF1E88E5).withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      const Icon(
+                        Icons.smartphone_outlined,
+                        color: Colors.white,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'ID DE SESIÓN',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white70,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        '${widget.sesion!.id}',
+                        style: const TextStyle(
+                          fontSize: 72,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 4,
+                          height: 1,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      if (widget.sesion!.ejercicio != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.fitness_center,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  widget.sesion!.ejercicio!.name,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Instrucciones
+                Container(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E88E5).withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFF1E88E5).withOpacity(0.2),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1E88E5),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                '1',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Abre la aplicación en tu laptop',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : Colors.black87,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1E88E5),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                '2',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Ingresa el ID de sesión mostrado arriba',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : Colors.black87,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1E88E5),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                '3',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Espera la conexión automática',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : Colors.black87,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ] else
+                // Si no hay sesión, mostrar mensaje
+                Container(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  padding: const EdgeInsets.all(40),
                   decoration: BoxDecoration(
                     color: isDarkMode
                         ? const Color(0xFF1A1F3A)
@@ -160,292 +384,41 @@ class _ConnectDeviceViewState extends State<ConnectDeviceView> {
                           ? Colors.white.withOpacity(0.05)
                           : Colors.grey.withOpacity(0.15),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 20,
-                        offset: const Offset(0, 4),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        size: 64,
+                        color: Colors.orange[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No hay sesión activa',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode
+                              ? Colors.white
+                              : Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Por favor, inicia un ejercicio primero',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDarkMode
+                              ? Colors.grey[400]
+                              : Colors.grey[600],
+                        ),
                       ),
                     ],
                   ),
-                  child: Form(
-                    key: _formKey,
-                    autovalidateMode:
-                        AutovalidateMode.onUserInteraction,
-                    child: Column(
-                      children: [
-                        // Etiqueta del campo
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.pin_outlined,
-                              size: 20,
-                              color: isDarkMode
-                                  ? Colors.white70
-                                  : Colors.black54,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Código de 6 dígitos',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: isDarkMode
-                                    ? Colors.white70
-                                    : Colors.black87,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Campo de código
-                        TextFormField(
-                          controller: _codeCtrl,
-                          keyboardType: TextInputType.number,
-                          maxLength: 6,
-                          textAlign: TextAlign.center,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          style: TextStyle(
-                            fontSize: 32,
-                            letterSpacing: 12,
-                            fontWeight: FontWeight.bold,
-                            color: isDarkMode
-                                ? Colors.white
-                                : Colors.black87,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: "000000",
-                            hintStyle: TextStyle(
-                              color: isDarkMode
-                                  ? Colors.white24
-                                  : Colors.grey[300],
-                              letterSpacing: 12,
-                            ),
-                            counterText: "",
-                            filled: true,
-                            fillColor: isDarkMode
-                                ? const Color(0xFF0F1629)
-                                : const Color(0xFFF8F9FA),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(
-                                12,
-                              ),
-                              borderSide: BorderSide.none,
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(
-                                12,
-                              ),
-                              borderSide: BorderSide(
-                                color: isDarkMode
-                                    ? Colors.white.withOpacity(
-                                        0.05,
-                                      )
-                                    : Colors.grey.withOpacity(
-                                        0.15,
-                                      ),
-                                width: 2,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(
-                                12,
-                              ),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF1E88E5),
-                                width: 2,
-                              ),
-                            ),
-                            errorBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(
-                                12,
-                              ),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFE53935),
-                                width: 2,
-                              ),
-                            ),
-                            focusedErrorBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(
-                                12,
-                              ),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFE53935),
-                                width: 2,
-                              ),
-                            ),
-                            contentPadding:
-                                const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 20,
-                                ),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor ingresa el código';
-                            }
-                            if (value.length < 6) {
-                              return 'El código debe tener 6 dígitos';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Botón de vincular
-                        SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: ElevatedButton(
-                            onPressed: _isLoading
-                                ? null
-                                : _handleConnect,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(
-                                0xFF1E88E5,
-                              ),
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(12),
-                              ),
-                              disabledBackgroundColor: isDarkMode
-                                  ? Colors.grey[800]
-                                  : Colors.grey[300],
-                            ),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child:
-                                        CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2.5,
-                                        ),
-                                  )
-                                : Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                        Icons.link_rounded,
-                                        size: 22,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      const Text(
-                                        'VINCULAR DISPOSITIVO',
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight:
-                                              FontWeight.w600,
-                                          letterSpacing: 0.5,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
-              ),
 
-              const SizedBox(height: 32),
-
-              // Información adicional
-              Container(
-                constraints: const BoxConstraints(maxWidth: 500),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E88E5).withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(
-                      0xFF1E88E5,
-                    ).withOpacity(0.1),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline_rounded,
-                      color: const Color(0xFF1E88E5),
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'El código se genera automáticamente en la pantalla grande y es válido por 5 minutos.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: isDarkMode
-                              ? Colors.grey[400]
-                              : Colors.grey[700],
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Ayuda adicional
-              TextButton.icon(
-                onPressed: () {
-                  // Mostrar ayuda o tutorial
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Row(
-                        children: [
-                          Icon(
-                            Icons.help_outline,
-                            color: Color(0xFF1E88E5),
-                          ),
-                          SizedBox(width: 12),
-                          Text('¿Cómo funciona?'),
-                        ],
-                      ),
-                      content: const Text(
-                        '1. Abre la aplicación en tu laptop\n'
-                        '2. Encontrarás un código de 6 dígitos\n'
-                        '3. Ingresa ese código aquí\n'
-                        '4. ¡Listo! Tu cámara estará sincronizada',
-                        style: TextStyle(height: 1.6),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('ENTENDIDO'),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                icon: Icon(
-                  Icons.help_outline_rounded,
-                  size: 18,
-                  color: isDarkMode
-                      ? Colors.grey[400]
-                      : Colors.grey[600],
-                ),
-                label: Text(
-                  '¿Necesitas ayuda?',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isDarkMode
-                        ? Colors.grey[400]
-                        : Colors.grey[600],
-                  ),
-                ),
-              ),
+              
             ],
           ),
         ),

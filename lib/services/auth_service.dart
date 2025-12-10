@@ -160,4 +160,62 @@ class AuthService {
       'Authorization': 'Bearer ${token ?? ''}',
     };
   }
+
+  // Decodificar JWT y obtener información del payload
+  Map<String, dynamic>? decodeToken(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) {
+        return null;
+      }
+
+      final payload = parts[1];
+      final normalized = base64Url.normalize(payload);
+      final resp = utf8.decode(base64Url.decode(normalized));
+      final payloadMap = json.decode(resp);
+      
+      return payloadMap as Map<String, dynamic>;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Obtener el ID del usuario desde el token
+  Future<int?> getUserIdFromToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Intentar con diferentes claves posibles
+    String? token = prefs.getString('access_token');
+    if (token == null) {
+      token = prefs.getString('flutter.access_token');
+    }
+    
+    print('Token obtenido: ${token?.substring(0, token.length > 20 ? 20 : token.length)}...');
+    
+    if (token == null) {
+      print('No se encontró el token');
+      return null;
+    }
+
+    final payload = decodeToken(token);
+    if (payload == null) {
+      print('No se pudo decodificar el token');
+      return null;
+    }
+
+    print('Payload del token: $payload');
+
+    // El token JWT puede tener diferentes nombres para el ID
+    // Intentar con 'sub', 'user_id', 'id_user', 'id'
+
+    if (payload.containsKey('id')) {
+      final id = payload['id'];
+      print('Encontrado "id": $id');
+      if (id is int) return id;
+      if (id is String) return int.tryParse(id);
+    }
+
+    print('No se encontró ningún campo de ID en el token');
+    return null;
+  }
 }

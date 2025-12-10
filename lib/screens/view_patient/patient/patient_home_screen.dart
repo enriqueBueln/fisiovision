@@ -1,18 +1,27 @@
+import 'package:fisiovision/providers/patients_provider.dart';
 import 'package:fisiovision/widgets/scaffold_side_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:fisiovision/models/patients_model.dart';
+import 'package:fisiovision/models/sesion_model.dart';
+import 'package:fisiovision/services/sesion_service.dart';
+import 'package:fisiovision/services/auth_service.dart';
 
 class PatientHomeScreen extends StatelessWidget {
   const PatientHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ScaffoldSideMenu(
-      title: "Bienvenido a tu Panel",
-      subtitle:
-          "Aquí puedes ver tu progreso y ejercicios asignados",
-      drawer: const _PatientDrawer(),
-      body: const AssignedExercisesView(),
+    return ChangeNotifierProvider(
+      create: (_) => AssignedExerciseProvider()..fetchExercises(),
+      child: ScaffoldSideMenu(
+        title: "Bienvenido a tu Panel",
+        subtitle:
+            "Aquí puedes ver tu progreso y ejercicios asignados",
+        drawer: const _PatientDrawer(),
+        body: const AssignedExercisesView(),
+      ),
     );
   }
 }
@@ -102,22 +111,6 @@ class _PatientDrawer extends StatelessWidget {
   }
 }
 
-class AssignedExercise {
-  final String title;
-  final String series;
-  final String reps;
-  final bool isCompleted;
-  final String difficulty;
-
-  AssignedExercise({
-    required this.title,
-    required this.series,
-    required this.reps,
-    required this.isCompleted,
-    required this.difficulty,
-  });
-}
-
 class AssignedExercisesView extends StatelessWidget {
   const AssignedExercisesView({super.key});
 
@@ -126,153 +119,155 @@ class AssignedExercisesView extends StatelessWidget {
     final isDarkMode =
         Theme.of(context).brightness == Brightness.dark;
 
-    final exercises = [
-      AssignedExercise(
-        title: "Sentadilla Profunda",
-        series: "3",
-        reps: "15",
-        isCompleted: false,
-        difficulty: "Moderado",
-      ),
-      AssignedExercise(
-        title: "Flexión de Codo",
-        series: "4",
-        reps: "12",
-        isCompleted: true,
-        difficulty: "Fácil",
-      ),
-      AssignedExercise(
-        title: "Abducción de Hombro",
-        series: "3",
-        reps: "10",
-        isCompleted: false,
-        difficulty: "Fácil",
-      ),
-    ];
+    return Consumer<AssignedExerciseProvider>(
+      builder: (context, provider, child) {
+        if (provider.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    final completedCount = exercises
-        .where((e) => e.isCompleted)
-        .length;
-    final totalCount = exercises.length;
-    final progress = completedCount / totalCount;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Tarjeta de Resumen
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF3B82F6),
-                  const Color(0xFF1E88E5),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF3B82F6).withOpacity(0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
+        if (provider.error != null) {
+          return Center(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Row(
-                  mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Tu Rutina de Hoy',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '$completedCount/$totalCount',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Colors.red[300],
                 ),
                 const SizedBox(height: 16),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 8,
-                    backgroundColor: Colors.white.withOpacity(0.3),
-                    valueColor:
-                        const AlwaysStoppedAnimation<Color>(
-                          Colors.white,
-                        ),
+                Text(
+                  'Error al cargar ejercicios',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode
+                        ? Colors.white
+                        : Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  '${(progress * 100).toStringAsFixed(0)}% completado',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 14,
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                  ),
+                  child: Text(
+                    provider.error!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: isDarkMode
+                          ? Colors.grey[400]
+                          : Colors.grey[600],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => provider.fetchExercises(),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Reintentar'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3B82F6),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
+          );
+        }
 
-          const SizedBox(height: 32),
-
-          // Lista de Ejercicios
-          Text(
-            'Ejercicios',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: isDarkMode
-                  ? Colors.white
-                  : const Color(0xFF1E293B),
+        if (provider.exercises.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.fitness_center,
+                  size: 64,
+                  color: isDarkMode
+                      ? Colors.grey[600]
+                      : Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No tienes ejercicios asignados',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode
+                        ? Colors.white
+                        : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Tu fisioterapeuta te asignará ejercicios pronto',
+                  style: TextStyle(
+                    color: isDarkMode
+                        ? Colors.grey[400]
+                        : Colors.grey[600],
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 16),
+          );
+        }
 
-          ...exercises.map(
-            (exercise) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _ExerciseCard(
-                exercise: exercise,
-                isDarkMode: isDarkMode,
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 32),
+
+              // Lista de Ejercicios
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Ejercicios',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode
+                          ? Colors.white
+                          : const Color(0xFF1E293B),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: () => provider.fetchExercises(),
+                    color: isDarkMode
+                        ? Colors.white
+                        : const Color(0xFF1E293B),
+                  ),
+                ],
               ),
-            ),
+              const SizedBox(height: 16),
+
+              ...provider.exercises.map(
+                (exercise) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _ExerciseCard(
+                    exercise: exercise,
+                    isDarkMode: isDarkMode,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
 
-class _ExerciseCard extends StatelessWidget {
-  final AssignedExercise exercise;
+class _ExerciseCard extends StatefulWidget {
+  final AssignedExerciseModel exercise;
   final bool isDarkMode;
 
   const _ExerciseCard({
@@ -280,34 +275,115 @@ class _ExerciseCard extends StatelessWidget {
     required this.isDarkMode,
   });
 
-  Color _getDifficultyColor() {
-    switch (exercise.difficulty) {
-      case "Fácil":
-        return const Color(0xFF10B981);
-      case "Moderado":
-        return const Color(0xFFF59E0B);
-      case "Difícil":
-        return const Color(0xFFEF4444);
-      default:
-        return const Color(0xFF64748B);
+  @override
+  State<_ExerciseCard> createState() => _ExerciseCardState();
+}
+
+class _ExerciseCardState extends State<_ExerciseCard> {
+  bool _isStarting = false;
+
+  Future<void> _handleStartExercise(BuildContext context) async {
+    setState(() => _isStarting = true);
+
+    try {
+      final sesionService = SesionService();
+      final authService = AuthService();
+      
+      // Obtener el ID del paciente desde el token JWT
+      final userId = await authService.getUserIdFromToken();
+      
+      if (userId == null) {
+        throw Exception('No se pudo obtener el ID del usuario. Por favor, inicia sesión nuevamente.');
+      }
+
+      final sesionCreate = SesionCreate(
+        idPaciente: userId,
+        idEjercicio: widget.exercise.ejercicio.id,
+        dateSpecified: DateTime.now(),
+      );
+
+      final sesion = await sesionService.startSesion(sesionCreate);
+
+      if (!context.mounted) return;
+
+      _showSuccessAndNavigate(context, sesion);
+    } catch (e) {
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(
+                Icons.error_outline,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Error: ${e.toString().replaceAll('Exception: ', '')}',
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFFE53935),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isStarting = false);
+      }
     }
+  }
+
+  void _showSuccessAndNavigate(BuildContext context, SesionResponse sesion) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text('Sesión iniciada: ${sesion.ejercicio?.name ?? "Ejercicio"}'),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF43A047),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+
+    // Navegar a la pantalla de conexión, pasando la sesión
+    context.push('/connect-device', extra: sesion);
   }
 
   @override
   Widget build(BuildContext context) {
-    final difficultyColor = _getDifficultyColor();
+    final isCompleted = !widget.exercise.isActive;
 
     return Container(
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1A1F3A) : Colors.white,
+        color: widget.isDarkMode ? const Color(0xFF1A1F3A) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: exercise.isCompleted
+          color: isCompleted
               ? const Color(0xFF10B981).withOpacity(0.3)
-              : (isDarkMode
+              : (widget.isDarkMode
                     ? Colors.white.withOpacity(0.05)
                     : Colors.grey.withOpacity(0.15)),
-          width: exercise.isCompleted ? 2 : 1,
+          width: isCompleted ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
@@ -326,16 +402,16 @@ class _ExerciseCard extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: exercise.isCompleted
+                color: isCompleted
                     ? const Color(0xFF10B981).withOpacity(0.1)
                     : const Color(0xFF3B82F6).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                exercise.isCompleted
+                isCompleted
                     ? Icons.check_circle
                     : Icons.fitness_center,
-                color: exercise.isCompleted
+                color: isCompleted
                     ? const Color(0xFF10B981)
                     : const Color(0xFF3B82F6),
                 size: 28,
@@ -349,18 +425,18 @@ class _ExerciseCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    exercise.title,
+                    widget.exercise.ejercicio.name,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: exercise.isCompleted
-                          ? (isDarkMode
+                      color: isCompleted
+                          ? (widget.isDarkMode
                                 ? const Color(0xFF94A3B8)
                                 : const Color(0xFF64748B))
-                          : (isDarkMode
+                          : (widget.isDarkMode
                                 ? Colors.white
                                 : const Color(0xFF1E293B)),
-                      decoration: exercise.isCompleted
+                      decoration: isCompleted
                           ? TextDecoration.lineThrough
                           : null,
                     ),
@@ -371,37 +447,18 @@ class _ExerciseCard extends StatelessWidget {
                       Icon(
                         Icons.repeat,
                         size: 14,
-                        color: isDarkMode
+                        color: widget.isDarkMode
                             ? const Color(0xFF64748B)
                             : const Color(0xFF94A3B8),
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '${exercise.series} series × ${exercise.reps} reps',
+                        '${widget.exercise.ejercicio.series} series × ${widget.exercise.ejercicio.repetitions} reps',
                         style: TextStyle(
                           fontSize: 13,
-                          color: isDarkMode
+                          color: widget.isDarkMode
                               ? const Color(0xFF64748B)
                               : const Color(0xFF94A3B8),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: difficultyColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          exercise.difficulty,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: difficultyColor,
-                          ),
                         ),
                       ),
                     ],
@@ -411,9 +468,9 @@ class _ExerciseCard extends StatelessWidget {
             ),
 
             // Botón de acción
-            if (!exercise.isCompleted)
+            if (!isCompleted)
               ElevatedButton(
-                onPressed: () => context.go('/connect-device'),
+                onPressed: _isStarting ? null : () => _handleStartExercise(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF3B82F6),
                   foregroundColor: Colors.white,
@@ -425,19 +482,31 @@ class _ExerciseCard extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
+                  disabledBackgroundColor: widget.isDarkMode
+                      ? Colors.grey[800]
+                      : Colors.grey[300],
                 ),
-                child: const Text(
-                  'Iniciar',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: _isStarting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'Iniciar',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
               )
             else
-              Icon(
+              const Icon(
                 Icons.check_circle,
-                color: const Color(0xFF10B981),
+                color: Color(0xFF10B981),
                 size: 32,
               ),
           ],

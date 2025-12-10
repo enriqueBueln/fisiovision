@@ -10,6 +10,7 @@ import 'package:fisiovision/screens/view_patient/patient/connection_web.dart';
 import 'package:fisiovision/screens/view_patient/patient/laptop_feedback.dart';
 import 'package:fisiovision/screens/view_patient/patient/mobile_camera_view.dart';
 import 'package:fisiovision/screens/view_patient/patient/patient_home_screen.dart';
+import 'package:fisiovision/models/sesion_model.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -70,7 +71,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/connect-device',
-        builder: (context, state) => const ConnectDeviceView(),
+        builder: (context, state) {
+          final sesion = state.extra as SesionResponse?;
+          return ConnectDeviceView(sesion: sesion);
+        },
       ),
       GoRoute(
         path: '/camera-mobile',
@@ -126,7 +130,10 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/connect-device',
-      builder: (context, state) => const ConnectDeviceView(),
+      builder: (context, state) {
+        final sesion = state.extra as SesionResponse?;
+        return ConnectDeviceView(sesion: sesion);
+      },
     ),
     GoRoute(
       path: '/camera-mobile',
