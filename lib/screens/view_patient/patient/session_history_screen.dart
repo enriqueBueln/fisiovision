@@ -1,7 +1,10 @@
 // screens/view_patient/patient/session_history_screen.dart
 import 'package:fisiovision/providers/session_history_provider.dart';
 import 'package:fisiovision/widgets/scaffold_side_menu.dart';
+import 'package:fisiovision/models/profile_model.dart';
+import 'package:fisiovision/services/profile_service.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
@@ -15,7 +18,163 @@ class SessionHistoryScreen extends StatelessWidget {
       child: const ScaffoldSideMenu(
         title: "Historial de Sesiones",
         subtitle: "Revisa tu progreso y sesiones completadas",
+        drawer: _PatientDrawer(),
         body: _SessionHistoryBody(),
+      ),
+    );
+  }
+}
+
+class _PatientDrawer extends StatefulWidget {
+  const _PatientDrawer();
+
+  @override
+  State<_PatientDrawer> createState() => _PatientDrawerState();
+}
+
+class _PatientDrawerState extends State<_PatientDrawer> {
+  final ProfileService _profileService = ProfileService();
+  PatientProfileModel? _profile;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final profile = await _profileService.getPatientInfo();
+      if (mounted) {
+        setState(() {
+          _profile = profile;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString().replaceAll('Exception: ', '');
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode =
+        Theme.of(context).brightness == Brightness.dark;
+
+    return Drawer(
+      backgroundColor: isDarkMode
+          ? const Color(0xFF1A1F3A)
+          : Colors.white,
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: isDarkMode
+                  ? const Color(0xFF0F172A)
+                  : const Color(0xFF1E88E5),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                CircleAvatar(
+                  radius: 32,
+                  backgroundColor: Colors.white,
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF1E88E5),
+                          ),
+                        )
+                      : Text(
+                          _profile != null
+                              ? _profile!.name[0].toUpperCase()
+                              : 'P',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1E88E5),
+                          ),
+                        ),
+                ),
+                const SizedBox(height: 12),
+                if (_isLoading)
+                  const Text(
+                    'Cargando...',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  )
+                else if (_error != null)
+                  Text(
+                    'Error al cargar perfil',
+                    style: TextStyle(
+                      color: Colors.red[200],
+                      fontSize: 14,
+                    ),
+                  )
+                else if (_profile != null) ...[
+                  Text(
+                    _profile!.fullName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _profile!.email,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 13,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          ListTile(
+            leading: const Icon(
+              Icons.fitness_center,
+              color: Color(0xFF1E88E5),
+            ),
+            title: const Text('Mis Ejercicios'),
+            onTap: () {
+              Navigator.pop(context);
+              context.go('/home');
+            },
+          ),
+          ListTile(
+            leading: const Icon(
+              Icons.history,
+              color: Color(0xFF1E88E5),
+            ),
+            title: const Text('Historial'),
+            selected: true,
+            selectedTileColor: isDarkMode
+                ? const Color(0xFF1E88E5).withOpacity(0.1)
+                : const Color(0xFF1E88E5).withOpacity(0.1),
+            onTap: () => Navigator.pop(context),
+          ),
+          const Divider(),
+        ],
       ),
     );
   }
