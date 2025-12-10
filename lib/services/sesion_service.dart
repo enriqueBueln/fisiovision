@@ -273,16 +273,25 @@ class SesionService {
       final headers = await _getHeaders();
       final url = Uri.parse('$baseUrl/api/v1/sesiones/$sessionId/feedback');
 
+      final body = {
+        'id_sesion': sessionId,  // El backend lo espera según el schema
+        'pain_level': painLevel ?? 0,
+        'difficulty': difficulty ?? 0,
+        'fatigue': fatigue ?? 0,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+      };
+
+      print('📤 Enviando feedback a: $url');
+      print('📦 Body: ${jsonEncode(body)}');
+
       final response = await http.post(
         url,
         headers: headers,
-        body: jsonEncode({
-          if (painLevel != null) 'pain_level': painLevel,
-          if (difficulty != null) 'difficulty': difficulty,
-          if (fatigue != null) 'fatigue': fatigue,
-          if (notes != null) 'notes': notes,
-        }),
+        body: jsonEncode(body),
       );
+
+      print('📥 Status: ${response.statusCode}');
+      print('📥 Response: ${response.body}');
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -352,7 +361,44 @@ class SesionService {
         throw Exception('No autorizado. Por favor inicia sesión nuevamente');
       } else {
         final errorData = jsonDecode(response.body);
-        throw Exception(errorData['detail'] ?? 'Error al obtener sesiones');
+        throw Exception(errorData['detail'] ?? 'Error al agregar feedback');
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
+  /// Analizar sesión con Prolog
+  /// POST /sesion/{id_sesion}/analizar
+  Future<Map<String, dynamic>> analyzeSesionWithProlog({
+    required int sessionId,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final url = Uri.parse('$baseUrl/api/v1/prolog/sesion/$sessionId/analizar');
+
+      print('📤 Analizando sesión: $url');
+
+      final response = await http.post(
+        url,
+        headers: headers,
+      );
+
+      print('📥 Status análisis: ${response.statusCode}');
+      print('📥 Response análisis: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else if (response.statusCode == 404) {
+        throw Exception('Sesión no encontrada');
+      } else if (response.statusCode == 400) {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['detail'] ?? 'No hay datos para analizar');
+      } else if (response.statusCode == 401) {
+        throw Exception('No autorizado. Por favor inicia sesión nuevamente');
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['detail'] ?? 'Error al analizar sesión');
       }
     } catch (e) {
       throw Exception('Error de conexión: $e');

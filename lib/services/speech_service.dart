@@ -96,18 +96,27 @@ class SpeechService {
       await _speech.listen(
         onResult: (result) {
           final text = result.recognizedWords.toLowerCase().trim();
+          
+          // LOG: Mostrar TODO lo que escucha
+          print('👂 Escuchado: "$text" | Final: ${result.finalResult} | Confidence: ${result.confidence}');
+          
           if (text.isEmpty) return;
           
           if (result.finalResult) {
-            print('🎤 [SpeechService] FINAL: "$text"');
+            print('🎤 [SpeechService] ✅ FINAL: "$text"');
+            print('🔍 Enviando comando a procesador...');
             onResult(text);
             lastPartialResult = '';
           } else {
             // Procesar resultados parciales si contienen comandos completos
+            print('🎤 Parcial: "$text" | Palabras: ${text.split(' ').length}');
             if (text != lastPartialResult && text.split(' ').length >= 2) {
               // Detectar comandos completos en parciales
-              if (_isCompleteCommand(text)) {
-                print('🎤 [SpeechService] Comando detectado: "$text"');
+              final isCommand = _isCompleteCommand(text);
+              print('🔎 ¿Es comando completo? $isCommand');
+              if (isCommand) {
+                print('🎤 [SpeechService] ⚡ Comando detectado en parcial: "$text"');
+                print('🔍 Enviando comando a procesador...');
                 onResult(text);
                 lastPartialResult = text;
               }
@@ -140,9 +149,19 @@ class SpeechService {
       'ocultar cadera', 'mostrar cadera',
       'ocultar tobillo', 'mostrar tobillo',
       'mostrar todo', 'ocultar todo',
+      'terminar sesion', 'terminar ejercicio', 'finalizar sesion',
+      'acabar sesion', 'finalizar ejercicio', 'acabar ejercicio',
     ];
     
-    return commands.any((cmd) => text.contains(cmd));
+    print('🔍 Verificando si "$text" es comando...');
+    for (var cmd in commands) {
+      if (text.contains(cmd)) {
+        print('✅ ¡Coincide con "$cmd"!');
+        return true;
+      }
+    }
+    print('❌ No coincide con ningún comando');
+    return false;
   }
 
   /// Detener de escuchar

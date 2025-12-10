@@ -3,6 +3,8 @@ import 'package:fisiovision/providers/session_history_provider.dart';
 import 'package:fisiovision/widgets/scaffold_side_menu.dart';
 import 'package:fisiovision/models/profile_model.dart';
 import 'package:fisiovision/services/profile_service.dart';
+import 'package:fisiovision/services/sesion_service.dart';
+import 'package:fisiovision/screens/view_patient/patient/session_analysis_result_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -564,31 +566,80 @@ class _SessionCard extends StatelessWidget {
     }
   }
 
+  Future<void> _handleSessionTap(BuildContext context) async {
+    if (session.status != 'completada') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Solo puedes ver el análisis de sesiones completadas'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      final sesionService = SesionService();
+      final analysisData = await sesionService.analyzeSesionWithProlog(sessionId: session.id);
+      
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => SessionAnalysisResultScreen(
+              analysisData: analysisData,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al obtener el análisis: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final statusColor = _getStatusColor(session.status);
     final timeFormat = DateFormat('HH:mm');
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1A1F3A) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDarkMode
-              ? Colors.white.withOpacity(0.05)
-              : Colors.grey.withOpacity(0.15),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+    return InkWell(
+      onTap: () => _handleSessionTap(context),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF1A1F3A) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDarkMode
+                ? Colors.white.withOpacity(0.05)
+                : Colors.grey.withOpacity(0.15),
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -698,6 +749,7 @@ class _SessionCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

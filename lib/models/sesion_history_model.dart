@@ -39,28 +39,40 @@ class SessionHistoryModel {
 
   factory SessionHistoryModel.fromJson(Map<String, dynamic> json) {
     return SessionHistoryModel(
-      id: json['id'],
-      idPaciente: json['id_paciente'],
-      idEjercicio: json['id_ejercicio'],
-      idFisioterapeuta: json['id_fisioterapeuta'],
-      dateSpecified: DateTime.parse(json['date_specified']),
-      dateStart: DateTime.parse(json['date_start']),
+      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
+      idPaciente: json['id_paciente'] is int 
+          ? json['id_paciente'] 
+          : int.parse(json['id_paciente'].toString()),
+      idEjercicio: json['id_ejercicio'] is int 
+          ? json['id_ejercicio'] 
+          : int.parse(json['id_ejercicio'].toString()),
+      idFisioterapeuta: json['id_fisioterapeuta'] is int 
+          ? json['id_fisioterapeuta'] 
+          : int.parse(json['id_fisioterapeuta'].toString()),
+      dateSpecified: DateTime.parse(json['date_specified'].toString()),
+      dateStart: DateTime.parse(json['date_start'].toString()),
       dateEnd: json['date_end'] != null
-          ? DateTime.parse(json['date_end'])
+          ? DateTime.parse(json['date_end'].toString())
           : null,
-      status: json['status'],
-      durationSeconds: json['duration_seconds'],
-      painLevel: json['pain_level'],
-      dateCreated: DateTime.parse(json['date_created']),
+      status: json['status'].toString(),
+      durationSeconds: json['duration_seconds'] != null
+          ? (json['duration_seconds'] is int 
+              ? json['duration_seconds'] 
+              : int.parse(json['duration_seconds'].toString()))
+          : null,
+      painLevel: json['pain_level'] != null
+          ? (json['pain_level'] is int 
+              ? json['pain_level'] 
+              : int.parse(json['pain_level'].toString()))
+          : null,
+      dateCreated: DateTime.parse(json['date_created'].toString()),
       dateModified: json['date_modified'] != null
-          ? DateTime.parse(json['date_modified'])
+          ? DateTime.parse(json['date_modified'].toString())
           : null,
       paciente: SessionPatient.fromJson(json['paciente']),
-      fisioterapeuta: SessionTherapist.fromJson(
-        json['fisioterapeuta'],
-      ),
+      fisioterapeuta: SessionTherapist.fromJson(json['fisioterapeuta']),
       ejercicio: SessionExercise.fromJson(json['ejercicio']),
-      feedbackPaciente: json['feedback_paciente'],
+      feedbackPaciente: json['feedback_paciente']?.toString(),
     );
   }
 
@@ -100,10 +112,10 @@ class SessionPatient {
 
   factory SessionPatient.fromJson(Map<String, dynamic> json) {
     return SessionPatient(
-      id: json['id'],
-      name: json['name'],
-      secondName: json['second_name'],
-      email: json['email'],
+      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
+      name: json['name'].toString(),
+      secondName: json['second_name'].toString(),
+      email: json['email'].toString(),
     );
   }
 
@@ -127,11 +139,11 @@ class SessionTherapist {
 
   factory SessionTherapist.fromJson(Map<String, dynamic> json) {
     return SessionTherapist(
-      id: json['id'],
-      name: json['name'],
-      secondName: json['second_name'],
-      email: json['email'],
-      phoneNumber: json['phone_number'],
+      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
+      name: json['name'].toString(),
+      secondName: json['second_name'].toString(),
+      email: json['email'].toString(),
+      phoneNumber: json['phone_number']?.toString(),
     );
   }
 
@@ -163,15 +175,21 @@ class SessionExercise {
 
   factory SessionExercise.fromJson(Map<String, dynamic> json) {
     return SessionExercise(
-      id: json['id'],
-      name: json['name'],
-      description: json['description'],
-      type: json['type'],
-      durationSeconds: json['duration_seconds'],
-      repetitions: json['repetitions'],
-      series: json['series'],
-      referenceImage: json['reference_image'] ?? '',
-      referenceVideo: json['reference_video'] ?? '',
+      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
+      name: json['name'].toString(),
+      description: json['description'].toString(),
+      type: json['type'].toString(),
+      durationSeconds: json['duration_seconds'] is int 
+          ? json['duration_seconds'] 
+          : int.parse(json['duration_seconds'].toString()),
+      repetitions: json['repetitions'] is int 
+          ? json['repetitions'] 
+          : int.parse(json['repetitions'].toString()),
+      series: json['series'] is int 
+          ? json['series'] 
+          : int.parse(json['series'].toString()),
+      referenceImage: (json['reference_image'] ?? '').toString(),
+      referenceVideo: (json['reference_video'] ?? '').toString(),
     );
   }
 }

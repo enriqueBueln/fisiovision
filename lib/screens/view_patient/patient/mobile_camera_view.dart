@@ -4,6 +4,7 @@ import 'package:camera/camera.dart';
 import 'package:fisiovision/services/websocket_service.dart';
 import 'package:fisiovision/services/voice_service.dart';
 import 'package:fisiovision/services/speech_service.dart';
+import 'package:fisiovision/services/sesion_service.dart';
 import 'dart:convert';
 
 class MobileCameraView extends StatefulWidget {
@@ -207,7 +208,9 @@ class _MobileCameraViewState extends State<MobileCameraView> {
 
   /// Procesar comando de voz con reconocimiento flexible
   void _processVoiceCommand(String command) {
-    print('🎤 Comando recibido: "$command"');
+    print('════════════════════════════════════════');
+    print('🎤 COMANDO RECIBIDO: "$command"');
+    print('════════════════════════════════════════');
     
     // Normalizar comando: minúsculas, sin acentos, sin espacios extras
     final cmd = command.toLowerCase()
@@ -218,11 +221,15 @@ class _MobileCameraViewState extends State<MobileCameraView> {
         .replaceAll('ú', 'u')
         .trim();
     
+    print('📝 Comando normalizado: "$cmd"');
+    
     bool commandRecognized = false;
     
     // Detectar acción (mostrar u ocultar)
     final bool isMostrar = cmd.contains('mostrar') || cmd.contains('muestra') || cmd.contains('ver') || cmd.contains('enseñar');
     final bool isOcultar = cmd.contains('ocultar') || cmd.contains('oculta') || cmd.contains('esconder') || cmd.contains('quitar');
+    
+    print('🔍 Análisis: isMostrar=$isMostrar, isOcultar=$isOcultar');
     
     // Esqueleto
     if ((isMostrar || isOcultar) && (cmd.contains('esqueleto') || cmd.contains('hueso'))) {
@@ -281,10 +288,36 @@ class _MobileCameraViewState extends State<MobileCameraView> {
       commandRecognized = true;
     }
     
+    // Terminar sesión - más variaciones
+    print('🔎 Verificando si es comando de terminar...');
+    print('   - ¿Contiene terminar? ${cmd.contains('terminar')}');
+    print('   - ¿Contiene finalizar? ${cmd.contains('finalizar')}');
+    print('   - ¿Contiene acabar? ${cmd.contains('acabar')}');
+    print('   - ¿Contiene sesion? ${cmd.contains('sesion')}');
+    print('   - ¿Contiene ejercicio? ${cmd.contains('ejercicio')}');
+    print('   - ¿Contiene entrenamiento? ${cmd.contains('entrenamiento')}');
+    
+    if ((cmd.contains('terminar') || cmd.contains('finalizar') || cmd.contains('acabar')) && 
+        (cmd.contains('sesion') || cmd.contains('ejercicio') || cmd.contains('entrenamiento'))) {
+      print('✅✅✅ Comando TERMINAR SESIÓN detectado ✅✅✅');
+      _voiceService.speak("Finalizando sesión");
+      Future.delayed(const Duration(milliseconds: 500), () {
+        print('⏰ Ejecutando _finishSession...');
+        _finishSession();
+      });
+      commandRecognized = true;
+    } else {
+      print('❌ NO es comando de terminar sesión');
+    }
+    
     // Si no se reconoció el comando
     if (!commandRecognized) {
-      print('⚠️ Comando no reconocido: "$command"');
+      print('⚠️⚠️⚠️ Comando NO RECONOCIDO: "$command" ⚠️⚠️⚠️');
+      print('════════════════════════════════════════');
       // No dar feedback de error para evitar interrupciones constantes
+    } else {
+      print('✅✅✅ Comando RECONOCIDO y PROCESADO ✅✅✅');
+      print('════════════════════════════════════════');
     }
   }
 
@@ -293,6 +326,50 @@ class _MobileCameraViewState extends State<MobileCameraView> {
     setState(() {
       _isStreaming = false;
     });
+  }
+
+  Future<void> _finishSession() async {
+    print('🏁 Iniciando finalización de sesión...');
+    
+    if (widget.sessionId == null) {
+      print('⚠️ No hay sessionId para finalizar');
+      _voiceService.speak("No hay sesión activa");
+      return;
+    }
+
+    print('🛑 Deteniendo streaming y WebSocket...');
+    _stopStreaming();
+    _wsService.disconnect();
+
+    try {
+      print('📤 Enviando petición para finalizar sesión ${widget.sessionId}...');
+      final sesionService = SesionService();
+      await sesionService.finishSesion(sessionId: widget.sessionId!);
+      
+      print('✅ Sesión finalizada exitosamente');
+      
+      if (mounted) {
+        _voiceService.speak("Sesión completada. Por favor, déjanos tu feedback");
+        // Dar tiempo a que termine de hablar antes de navegar
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        print('🔀 Navegando a pantalla de feedback...');
+        context.go('/session-feedback', extra: widget.sessionId);
+      }
+    } catch (e) {
+      print('❌ Error al finalizar sesión: $e');
+      if (mounted) {
+        _voiceService.speak("Error al finalizar sesión");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        await Future.delayed(const Duration(seconds: 2));
+        context.go('/home');
+      }
+    }
   }
 
   void _handleStop() {

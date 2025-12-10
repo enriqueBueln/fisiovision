@@ -351,6 +351,7 @@ class _ExerciseCardState extends State<_ExerciseCard> {
   bool _isStarting = false;
 
   Future<void> _handleStartExercise(BuildContext context) async {
+    if (!mounted) return;
     setState(() => _isStarting = true);
 
     try {
@@ -373,33 +374,35 @@ class _ExerciseCardState extends State<_ExerciseCard> {
 
       final sesion = await sesionService.startSesion(sesionCreate);
 
-      if (!context.mounted) return;
+      if (!mounted) return;
 
       _showSuccessAndNavigate(context, sesion);
     } catch (e) {
-      if (!context.mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.white),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Error: ${e.toString().replaceAll('Exception: ', '')}',
+      if (!mounted) return;
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Error: ${e.toString().replaceAll('Exception: ', '')}',
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
+            backgroundColor: const Color(0xFFE53935),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
           ),
-          backgroundColor: const Color(0xFFE53935),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _isStarting = false);
@@ -411,6 +414,8 @@ class _ExerciseCardState extends State<_ExerciseCard> {
     BuildContext context,
     SesionResponse sesion,
   ) {
+    if (!mounted || !context.mounted) return;
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -436,7 +441,9 @@ class _ExerciseCardState extends State<_ExerciseCard> {
       ),
     );
 
-    context.push('/connect-device', extra: sesion);
+    if (context.mounted) {
+      context.push('/connect-device', extra: sesion);
+    }
   }
 
   @override

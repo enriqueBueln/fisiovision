@@ -15,6 +15,8 @@ import 'package:fisiovision/screens/view_patient/patient/patient_home_screen.dar
 import 'package:fisiovision/models/sesion_model.dart';
 import 'package:fisiovision/screens/view_patient/patient/session_analysis_screen.dart';
 import 'package:fisiovision/screens/view_patient/patient/session_history_screen.dart';
+import 'package:fisiovision/screens/view_patient/patient/session_feedback_screen.dart';
+import 'package:fisiovision/screens/view_patient/patient/session_analysis_result_screen.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -107,6 +109,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/laptop-viewer',
         builder: (context, state) => const LaptopViewerScreen(),
       ),
+      GoRoute(
+        path: '/session-feedback',
+        builder: (context, state) {
+          final sessionId = state.extra as int?;
+          return SessionFeedbackScreen(sessionId: sessionId ?? 0);
+        },
+      ),
+      GoRoute(
+        path: '/session-analysis-result',
+        builder: (context, state) {
+          final analysisData = state.extra as Map<String, dynamic>?;
+          return SessionAnalysisResultScreen(
+            analysisData: analysisData ?? {},
+          );
+        },
+      ),
 
       // RUTAS DE EJERCICIOS
       GoRoute(
@@ -179,6 +197,22 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/laptop-viewer',
       builder: (context, state) => const LaptopViewerScreen(),
+    ),
+    GoRoute(
+      path: '/session-feedback',
+      builder: (context, state) {
+        final sessionId = state.extra as int?;
+        return SessionFeedbackScreen(sessionId: sessionId ?? 0);
+      },
+    ),
+    GoRoute(
+      path: '/session-analysis-result',
+      builder: (context, state) {
+        final analysisData = state.extra as Map<String, dynamic>?;
+        return SessionAnalysisResultScreen(
+          analysisData: analysisData ?? {},
+        );
+      },
     ),
     GoRoute(
       path: '/historial',
