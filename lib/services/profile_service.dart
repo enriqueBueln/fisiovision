@@ -19,6 +19,7 @@ class ProfileService {
       final url = Uri.parse('$baseUrl/api/v1/auth/pacientes');
 
       final response = await http.post(url, headers: headers);
+      print('Response Status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

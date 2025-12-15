@@ -98,9 +98,7 @@ class PatientsView extends ConsumerWidget {
                   final paciente = pacientes[index];
                   
                   // --- MAPEO DE DATOS FALTANTES ---
-                  // Como tu DB no tiene "riesgo" ni "lesión" en tabla Paciente, 
-                  // simulamos o usamos 'notes' para que no se rompa la UI.
-                  const riesgoSimulado = 'Bajo'; // Default por ahora
+                  final riesgoSimulado = ['Bajo', 'Medio', 'Alto'][(index) % 3];
                   final lesionTexto = paciente.notes != null && paciente.notes!.isNotEmpty 
                       ? paciente.notes! 
                       : 'Sin diagnóstico esp.';
