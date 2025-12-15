@@ -3,6 +3,7 @@ import 'package:fisiovision/models/ejercicio_model.dart';
 import 'package:fisiovision/providers/ejercicios_provider.dart';
 import 'package:fisiovision/providers/paciente_provider.dart';
 import 'package:fisiovision/providers/rutina_provider.dart';
+import 'package:fisiovision/screens/patient/therapist_patient_history_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 class PatientDetailScreen extends ConsumerWidget {
@@ -128,11 +129,31 @@ class PatientDetailScreen extends ConsumerWidget {
                               color: isDarkMode ? Colors.white : Colors.black87
                             ),
                           ),
-                          IconButton.filled(
-                            onPressed: () => _showAssignmentModal(context, ref, paciente.idUsuario!),
-                            icon: const Icon(Icons.add),
-                            style: IconButton.styleFrom(backgroundColor: const Color(0xFF1E88E5)),
-                            tooltip: "Asignar ejercicio",
+                          Row(
+                            children: [
+                              IconButton.filled(
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) => TherapistPatientHistoryScreen(
+                                        patientId: paciente.idUsuario!,
+                                        patientName: paciente.name,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.history),
+                                style: IconButton.styleFrom(backgroundColor: const Color(0xFF10B981)),
+                                tooltip: "Ver historial de sesiones",
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton.filled(
+                                onPressed: () => _showAssignmentModal(context, ref, paciente.idUsuario!),
+                                icon: const Icon(Icons.add),
+                                style: IconButton.styleFrom(backgroundColor: const Color(0xFF1E88E5)),
+                                tooltip: "Asignar ejercicio",
+                              ),
+                            ],
                           )
                         ],
                       ),

@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/sesion_model.dart';
+import '../models/sesion_history_model.dart';
 
 class SesionService {
   static String get baseUrl =>
@@ -362,6 +363,38 @@ class SesionService {
       } else {
         final errorData = jsonDecode(response.body);
         throw Exception(errorData['detail'] ?? 'Error al agregar feedback');
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
+  /// Obtener sesiones de un paciente (para fisioterapeuta)
+  /// GET /sesiones/paciente/{id_paciente}
+  Future<List<SessionHistoryModel>> getSessionsForPatient(int patientId) async {
+    try {
+      final headers = await _getHeaders();
+      final url = Uri.parse('$baseUrl/api/v1/sesiones/paciente/$patientId');
+
+      print('📤 Obteniendo sesiones del paciente: $url');
+
+      final response = await http.get(
+        url,
+        headers: headers,
+      );
+
+      print('📥 Status sesiones: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => SessionHistoryModel.fromJson(json)).toList();
+      } else if (response.statusCode == 404) {
+        throw Exception('Paciente no encontrado');
+      } else if (response.statusCode == 401) {
+        throw Exception('No autorizado. Por favor inicia sesión nuevamente');
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['detail'] ?? 'Error al obtener sesiones');
       }
     } catch (e) {
       throw Exception('Error de conexión: $e');
