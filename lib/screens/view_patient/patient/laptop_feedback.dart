@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fisiovision/services/websocket_service.dart';
+import 'package:fisiovision/services/sesion_service.dart';
+import 'package:fisiovision/services/ejercicio_service.dart';
+import 'package:fisiovision/models/ejercicio_model.dart';
 import 'dart:convert';
+import 'dart:async';
+import 'dart:math';
 
 class LaptopFeedbackView extends StatefulWidget {
   final int? sessionId;
@@ -18,25 +23,171 @@ class LaptopFeedbackView extends StatefulWidget {
 
 class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
   final _wsService = WebSocketService();
+  final _sesionService = SesionService();
+  final _ejercicioService = EjercicioService();
+  
   bool _isSessionActive = true;
   int _currentReps = 8;
   int _totalReps = 15;
   double _currentAngle = 85.0;
-  int _elapsedSeconds = 45;
+  int _elapsedSeconds = 0;
   
   String? _currentFrameBase64;
   int _frameCount = 0;
   Map<String, dynamic>? _latestAnalysis;
+  
+  // Timer y tracking de tiempo
+  Timer? _timer;
+  DateTime? _sessionStartTime;
+  
+  // Latidos del corazón
+  int _heartRate = 72;
+  Timer? _heartRateTimer;
+  final _random = Random();
+  
+  // Información del ejercicio
+  Ejercicio? _ejercicio;
+  Map<String, Map<String, int>>? _objetivoAngulos; // {rodilla: {izquierdo: 90, derecho: 90}}
+  double? _tolerancia;
+  String _currentArticulacion = 'rodilla';
+  String _currentLado = 'izquierdo';
+  
+  // Acelerómetro (simulado)
+  double _accelX = 0.0;
+  double _accelY = 0.0;
+  double _accelZ = 9.8; // Gravedad
+  Timer? _accelTimer;
+  double _movementIntensity = 0.0; // 0.0 a 1.0
 
   @override
   void initState() {
     super.initState();
     print('🎬 [LaptopFeedback] initState - sessionId recibido: ${widget.sessionId}');
+    _sessionStartTime = DateTime.now();
+    _startTimers();
+    _loadExerciseData();
     _connectToStream();
+  }
+  
+  void _startTimers() {
+    // Timer para actualizar el cronómetro cada segundo
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted && _sessionStartTime != null) {
+        setState(() {
+          _elapsedSeconds = DateTime.now().difference(_sessionStartTime!).inSeconds;
+        });
+      }
+    });
+    
+    // Timer para actualizar los latidos cada 3-5 segundos de forma aleatoria
+    _updateHeartRate();
+    
+    // Timer para actualizar acelerómetro cada 200ms
+    _updateAccelerometer();
+  }
+  
+  void _updateHeartRate() {
+    _heartRateTimer?.cancel();
+    
+    if (mounted) {
+      setState(() {
+        // Generar latidos en rango normal: 60-100 BPM
+        // Durante ejercicio leve-moderado: 70-90 BPM es prudente
+        _heartRate = 70 + _random.nextInt(21); // 70-90
+      });
+      
+      // Programar próxima actualización en 3-5 segundos
+      final nextUpdate = Duration(seconds: 3 + _random.nextInt(3));
+      _heartRateTimer = Timer(nextUpdate, _updateHeartRate);
+    }
+  }
+  
+  void _updateAccelerometer() {
+    _accelTimer?.cancel();
+    
+    if (mounted) {
+      setState(() {
+        // Simular datos de acelerómetro (m/s²)
+        // X e Y varían según el movimiento, Z cerca de 9.8 (gravedad)
+        
+        // Generar movimiento base aleatorio
+        final baseMovement = _random.nextDouble() * 0.3; // 0.0 - 0.3
+        
+        // Ocasionalmente (20% del tiempo) simular movimiento más intenso
+        final isIntenseMovement = _random.nextDouble() < 0.2;
+        final intensityFactor = isIntenseMovement ? 3.0 : 1.0;
+        
+        _accelX = (_random.nextDouble() - 0.5) * 2.0 * intensityFactor; // -1.0 a 1.0 (o más si intenso)
+        _accelY = (_random.nextDouble() - 0.5) * 2.0 * intensityFactor;
+        _accelZ = 9.8 + (_random.nextDouble() - 0.5) * 0.5 * intensityFactor; // ~9.8 con variación
+        
+        // Calcular intensidad del movimiento (magnitud del vector sin gravedad)
+        final magnitude = sqrt(_accelX * _accelX + _accelY * _accelY);
+        _movementIntensity = (magnitude / 3.0).clamp(0.0, 1.0); // Normalizar 0-1
+      });
+      
+      // Actualizar cada 200ms para simular frecuencia de sensor real
+      _accelTimer = Timer(const Duration(milliseconds: 200), _updateAccelerometer);
+    }
+  }
+  
+  Future<void> _loadExerciseData() async {
+    if (widget.sessionId == null) return;
+    
+    try {
+      print('📋 Cargando información del ejercicio...');
+      // 1. Obtener la sesión
+      final sesion = await _sesionService.getSesion(widget.sessionId!);
+      print('✅ Sesión obtenida: ${sesion.ejercicio?.name}');
+      
+      // 2. Obtener el ejercicio completo con ángulos objetivo
+      final ejercicios = await _ejercicioService.getEjercicios();
+      final ejercicio = ejercicios.firstWhere(
+        (e) => e.id == sesion.idEjercicio,
+        orElse: () => throw Exception('Ejercicio no encontrado'),
+      );
+      
+      print('✅ Ejercicio completo obtenido: ${ejercicio.name}');
+      print('   Ángulos objetivo: ${ejercicio.objective_angles}');
+      print('   Tolerancia: ${ejercicio.tolerance_degrees}°');
+      
+      // 3. Parsear ángulos objetivo
+      if (ejercicio.objective_angles.isNotEmpty) {
+        final parsed = jsonDecode(ejercicio.objective_angles) as Map<String, dynamic>;
+        final angulosMap = <String, Map<String, int>>{};
+        
+        parsed.forEach((key, value) {
+          if (value is Map) {
+            angulosMap[key] = {
+              'izquierdo': (value['izquierdo'] as num?)?.toInt() ?? 0,
+              'derecho': (value['derecho'] as num?)?.toInt() ?? 0,
+            };
+          }
+        });
+        
+        setState(() {
+          _ejercicio = ejercicio;
+          _objetivoAngulos = angulosMap;
+          _tolerancia = ejercicio.tolerance_degrees;
+          
+          // Detectar primera articulación disponible
+          if (angulosMap.isNotEmpty) {
+            _currentArticulacion = angulosMap.keys.first;
+          }
+        });
+        
+        print('✅ Ángulos objetivo parseados: $_objetivoAngulos');
+      }
+    } catch (e) {
+      print('❌ Error cargando ejercicio: $e');
+    }
   }
 
   @override
   void dispose() {
+    _timer?.cancel();
+    _heartRateTimer?.cancel();
+    _accelTimer?.cancel();
     _wsService.dispose();
     super.dispose();
   }
@@ -75,16 +226,16 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
               // Actualizar ángulos si están disponibles
               if (data['angulos'] != null) {
                 final angulos = data['angulos'] as Map<String, dynamic>;
-                if (angulos.isNotEmpty) {
-                  // angulos tiene estructura: {codo: {izquierdo: 145.2, derecho: 148.7}}
-                  final firstJoint = angulos.values.first;
-                  if (firstJoint is Map) {
-                    final firstValue = (firstJoint as Map<String, dynamic>).values.first;
-                    if (firstValue is num) {
-                      _currentAngle = firstValue.toDouble();
+                // angulos tiene estructura: {codo: {izquierdo: 145.2, derecho: 148.7}}
+                
+                // Extraer ángulo de la articulación y lado específico
+                if (angulos.containsKey(_currentArticulacion)) {
+                  final articulacionData = angulos[_currentArticulacion];
+                  if (articulacionData is Map && articulacionData.containsKey(_currentLado)) {
+                    final anguloValue = articulacionData[_currentLado];
+                    if (anguloValue is num) {
+                      _currentAngle = anguloValue.toDouble();
                     }
-                  } else if (firstJoint is num) {
-                    _currentAngle = firstJoint.toDouble();
                   }
                 }
               }
@@ -105,82 +256,69 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
     }
   }
 
-  void _endSession() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Row(
-          children: [
-            Icon(Icons.info_outline, color: Color(0xFF64748B)),
-            SizedBox(width: 12),
-            Text('Finalizar Sesión'),
-          ],
-        ),
-        content: const Text(
-          '¿Estás seguro de que deseas terminar la sesión actual?',
-          style: TextStyle(fontSize: 15),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('CANCELAR'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() => _isSessionActive = false);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Row(
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        color: Colors.white,
-                      ),
-                      SizedBox(width: 12),
-                      Text('Sesión finalizada exitosamente'),
-                    ],
-                  ),
-                  backgroundColor: const Color(0xFF10B981),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              );
-              // context.go('/home');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('TERMINAR'),
-          ),
-        ],
-      ),
-    );
+  int? _getTargetAngle() {
+    if (_objetivoAngulos == null) return null;
+    if (!_objetivoAngulos!.containsKey(_currentArticulacion)) return null;
+    
+    final articulacionAngulos = _objetivoAngulos![_currentArticulacion]!;
+    return articulacionAngulos[_currentLado];
   }
-
+  
   Color _getAngleColor() {
-    if (_currentAngle >= 80 && _currentAngle <= 95) {
-      return const Color(0xFF10B981); // Verde suave
-    } else if (_currentAngle >= 70 && _currentAngle <= 105) {
-      return const Color(0xFFF59E0B); // Ámbar
+    final target = _getTargetAngle();
+    if (target == null || _tolerancia == null) {
+      // Sin datos del ejercicio, usar lógica genérica
+      if (_currentAngle >= 80 && _currentAngle <= 95) {
+        return const Color(0xFF10B981);
+      } else if (_currentAngle >= 70 && _currentAngle <= 105) {
+        return const Color(0xFFF59E0B);
+      } else {
+        return const Color(0xFFEF4444);
+      }
+    }
+    
+    // Comparar con objetivo del ejercicio
+    final diferencia = (_currentAngle - target).abs();
+    
+    if (diferencia <= _tolerancia!) {
+      return const Color(0xFF10B981); // Verde - Perfecto
+    } else if (diferencia <= _tolerancia! * 2) {
+      return const Color(0xFFF59E0B); // Ámbar - Cerca
     } else {
-      return const Color(0xFFEF4444); // Rojo suave
+      return const Color(0xFFEF4444); // Rojo - Muy lejos
     }
   }
 
   String _getFeedbackMessage() {
-    if (_currentAngle >= 80 && _currentAngle <= 95) {
-      return "Excelente postura";
-    } else if (_currentAngle >= 70 && _currentAngle <= 105) {
-      return "Ajusta el ángulo";
+    final target = _getTargetAngle();
+    if (target == null || _tolerancia == null) {
+      // Sin datos del ejercicio
+      return "Cargando objetivo...";
+    }
+    
+    final diferencia = _currentAngle - target;
+    final diferenciaAbs = diferencia.abs();
+    
+    if (diferenciaAbs <= _tolerancia!) {
+      return "¡Perfecto! Mantén esa posición";
+    } else if (diferenciaAbs <= _tolerancia! * 1.5) {
+      if (diferencia > 0) {
+        return "Muy bien, flexiona un poco más";
+      } else {
+        return "Muy bien, extiende un poco más";
+      }
+    } else if (diferenciaAbs <= _tolerancia! * 2) {
+      if (diferencia > 0) {
+        return "Flexiona más la articulación";
+      } else {
+        return "Extiende más la articulación";
+      }
     } else {
-      return "Revisa tu postura";
+      if (diferencia > 0) {
+        return "Necesitas flexionar mucho más";
+      } else {
+        return "Necesitas extender mucho más";
+      }
     }
   }
 
@@ -188,6 +326,40 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
     final minutes = seconds ~/ 60;
     final secs = seconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+  }
+  
+  Color _getMovementColor() {
+    if (_movementIntensity < 0.3) {
+      return const Color(0xFF10B981); // Verde - Estable
+    } else if (_movementIntensity < 0.6) {
+      return const Color(0xFFF59E0B); // Ámbar - Movimiento moderado
+    } else {
+      return const Color(0xFFEF4444); // Rojo - Mucho movimiento
+    }
+  }
+  
+  String _getMovementMessage() {
+    if (_movementIntensity < 0.2) {
+      return "Excelente estabilidad";
+    } else if (_movementIntensity < 0.4) {
+      return "Buen control del cuerpo";
+    } else if (_movementIntensity < 0.6) {
+      return "Intenta moverte menos";
+    } else if (_movementIntensity < 0.8) {
+      return "¡Te estás moviendo mucho!";
+    } else {
+      return "¡Mantén el cuerpo estable!";
+    }
+  }
+  
+  IconData _getMovementIcon() {
+    if (_movementIntensity < 0.3) {
+      return Icons.check_circle_outline;
+    } else if (_movementIntensity < 0.6) {
+      return Icons.warning_amber_rounded;
+    } else {
+      return Icons.priority_high;
+    }
   }
 
   @override
@@ -435,81 +607,15 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
               margin: const EdgeInsets.fromLTRB(0, 24, 24, 24),
               child: Column(
                 children: [
-                  // PROGRESO
-                  _MetricCard(
-                    isDarkMode: isDarkMode,
-                    title: "Progreso",
-                    icon: Icons.track_changes,
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.center,
-                          crossAxisAlignment:
-                              CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Text(
-                              '$_currentReps',
-                              style: TextStyle(
-                                color: isDarkMode
-                                    ? Colors.white
-                                    : const Color(0xFF1E293B),
-                                fontSize: 48,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              ' / $_totalReps',
-                              style: TextStyle(
-                                color: isDarkMode
-                                    ? const Color(0xFF64748B)
-                                    : const Color(0xFF94A3B8),
-                                fontSize: 20,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: _currentReps / _totalReps,
-                            minHeight: 6,
-                            backgroundColor: isDarkMode
-                                ? const Color(0xFF334155)
-                                : const Color(0xFFE2E8F0),
-                            valueColor:
-                                const AlwaysStoppedAnimation<
-                                  Color
-                                >(Color(0xFF3B82F6)),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          '${((_currentReps / _totalReps) * 100).toStringAsFixed(0)}% completado',
-                          style: TextStyle(
-                            color: isDarkMode
-                                ? const Color(0xFF94A3B8)
-                                : const Color(0xFF64748B),
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
                   // ÁNGULO
                   _MetricCard(
                     isDarkMode: isDarkMode,
-                    title: "Ángulo rodilla",
+                    title: "Ángulo ${_currentArticulacion}",
                     icon: Icons.architecture,
                     child: Column(
                       children: [
                         const SizedBox(height: 12),
+                        // Ángulo actual
                         Text(
                           '${_currentAngle.toStringAsFixed(0)}°',
                           style: TextStyle(
@@ -519,24 +625,72 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
+                        // Mostrar objetivo y diferencia
+                        if (_getTargetAngle() != null && _tolerancia != null) ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Objetivo: ${_getTargetAngle()}°',
+                                style: TextStyle(
+                                  color: isDarkMode
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF64748B),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: angleColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '±${_tolerancia!.toStringAsFixed(0)}°',
+                                  style: TextStyle(
+                                    color: angleColor,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          decoration: BoxDecoration(
-                            color: angleColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(6),
+                          const SizedBox(height: 8),
+                          // Barra de progreso visual
+                          _AngleProgressBar(
+                            current: _currentAngle,
+                            target: _getTargetAngle()!.toDouble(),
+                            tolerance: _tolerancia!,
+                            color: angleColor,
+                            isDarkMode: isDarkMode,
                           ),
-                          child: Text(
-                            'Objetivo: 80° - 95°',
-                            style: TextStyle(
-                              color: angleColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                        ] else
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: angleColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'Cargando objetivo...',
+                              style: TextStyle(
+                                color: isDarkMode
+                                    ? const Color(0xFF94A3B8)
+                                    : const Color(0xFF64748B),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -566,70 +720,166 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 16),
+
+                  // FRECUENCIA CARDÍACA
+                  _MetricCard(
+                    isDarkMode: isDarkMode,
+                    title: "Frecuencia Cardíaca",
+                    icon: Icons.favorite,
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              '$_heartRate',
+                              style: TextStyle(
+                                color: isDarkMode
+                                    ? const Color(0xFFEF4444)
+                                    : const Color(0xFFDC2626),
+                                fontSize: 48,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'BPM',
+                              style: TextStyle(
+                                color: isDarkMode
+                                    ? const Color(0xFF64748B)
+                                    : const Color(0xFF94A3B8),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'Normal',
+                            style: TextStyle(
+                              color: const Color(0xFF10B981),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // ESTABILIDAD (ACELERÓMETRO)
+                  _MetricCard(
+                    isDarkMode: isDarkMode,
+                    title: "Estabilidad corporal",
+                    icon: Icons.speed,
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 12),
+                        // Indicador visual de movimiento
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: _getMovementColor().withOpacity(0.3),
+                              width: 3,
+                            ),
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Icon(
+                                _getMovementIcon(),
+                                size: 32,
+                                color: _getMovementColor(),
+                              ),
+                              // Círculo pulsante según intensidad
+                              if (_movementIntensity > 0.5)
+                                Container(
+                                  width: 70 * _movementIntensity,
+                                  height: 70 * _movementIntensity,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: _getMovementColor().withOpacity(0.2),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Datos del acelerómetro
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isDarkMode
+                                ? const Color(0xFF1E293B)
+                                : const Color(0xFFF8F9FA),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            children: [
+                              _AccelRow(
+                                label: 'X',
+                                value: _accelX,
+                                isDarkMode: isDarkMode,
+                              ),
+                              const SizedBox(height: 4),
+                              _AccelRow(
+                                label: 'Y',
+                                value: _accelY,
+                                isDarkMode: isDarkMode,
+                              ),
+                              const SizedBox(height: 4),
+                              _AccelRow(
+                                label: 'Z',
+                                value: _accelZ,
+                                isDarkMode: isDarkMode,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Mensaje de feedback
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _getMovementColor().withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            _getMovementMessage(),
+                            style: TextStyle(
+                              color: _getMovementColor(),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
                   const Spacer(),
-
-                  // BOTONES
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: _isSessionActive
-                          ? _endSession
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFEF4444),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        disabledBackgroundColor: isDarkMode
-                            ? const Color(0xFF334155)
-                            : const Color(0xFFE2E8F0),
-                      ),
-                      child: const Text(
-                        'Terminar sesión',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        setState(
-                          () =>
-                              _isSessionActive = !_isSessionActive,
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: isDarkMode
-                            ? const Color(0xFFE2E8F0)
-                            : const Color(0xFF1E293B),
-                        side: BorderSide(
-                          color: isDarkMode
-                              ? const Color(0xFF334155)
-                              : const Color(0xFFCBD5E1),
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        _isSessionActive ? 'Pausar' : 'Reanudar',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -696,6 +946,179 @@ class _MetricCard extends StatelessWidget {
           child,
         ],
       ),
+    );
+  }
+}
+
+// Widget para mostrar barra de progreso del ángulo
+class _AngleProgressBar extends StatelessWidget {
+  final double current;
+  final double target;
+  final double tolerance;
+  final Color color;
+  final bool isDarkMode;
+
+  const _AngleProgressBar({
+    required this.current,
+    required this.target,
+    required this.tolerance,
+    required this.color,
+    required this.isDarkMode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Calcular el rango visible (target ± tolerance * 3 para mejor visualización)
+    final minRange = target - (tolerance * 3);
+    final maxRange = target + (tolerance * 3);
+    
+    // Posición normalizada del ángulo actual (0.0 a 1.0)
+    final normalizedCurrent = ((current - minRange) / (maxRange - minRange)).clamp(0.0, 1.0);
+    
+    // Posición del objetivo (siempre en el centro, 0.5)
+    final normalizedTarget = 0.5;
+    
+    // Zona de tolerancia normalizada
+    final toleranceZone = tolerance / (maxRange - minRange);
+    
+    return Column(
+      children: [
+        // Diferencia con el objetivo
+        Text(
+          '${(current - target).abs().toStringAsFixed(1)}° de diferencia',
+          style: TextStyle(
+            color: isDarkMode
+                ? const Color(0xFF64748B)
+                : const Color(0xFF94A3B8),
+            fontSize: 11,
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Barra de progreso
+        Container(
+          height: 8,
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? const Color(0xFF1E293B)
+                : const Color(0xFFE2E8F0),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Stack(
+            children: [
+              // Zona de tolerancia (verde)
+              Positioned(
+                left: (normalizedTarget - toleranceZone) * 100,
+                child: Container(
+                  width: (toleranceZone * 2) * 100,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              // Indicador del objetivo (línea vertical)
+              Positioned(
+                left: normalizedTarget * 100 - 1,
+                child: Container(
+                  width: 2,
+                  height: 8,
+                  color: const Color(0xFF10B981),
+                ),
+              ),
+              // Indicador de la posición actual
+              Positioned(
+                left: (normalizedCurrent * 100) - 4,
+                top: -2,
+                child: Container(
+                  width: 8,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDarkMode
+                          ? const Color(0xFF0F172A)
+                          : Colors.white,
+                      width: 2,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        // Etiquetas de rango
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '${minRange.toStringAsFixed(0)}°',
+              style: TextStyle(
+                color: isDarkMode
+                    ? const Color(0xFF475569)
+                    : const Color(0xFF94A3B8),
+                fontSize: 10,
+              ),
+            ),
+            Text(
+              '${maxRange.toStringAsFixed(0)}°',
+              style: TextStyle(
+                color: isDarkMode
+                    ? const Color(0xFF475569)
+                    : const Color(0xFF94A3B8),
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// Widget para mostrar una fila de datos del acelerómetro
+class _AccelRow extends StatelessWidget {
+  final String label;
+  final double value;
+  final bool isDarkMode;
+
+  const _AccelRow({
+    required this.label,
+    required this.value,
+    required this.isDarkMode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          '$label:',
+          style: TextStyle(
+            color: isDarkMode
+                ? const Color(0xFF94A3B8)
+                : const Color(0xFF64748B),
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Text(
+          '${value.toStringAsFixed(2)} m/s²',
+          style: TextStyle(
+            color: isDarkMode
+                ? Colors.white
+                : const Color(0xFF1E293B),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            fontFeatures: const [
+              FontFeature.tabularFigures(),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

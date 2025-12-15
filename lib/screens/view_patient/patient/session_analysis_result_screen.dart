@@ -28,7 +28,7 @@ class SessionAnalysisResultScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => context.go('/home'),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: SingleChildScrollView(
@@ -88,7 +88,7 @@ class SessionAnalysisResultScreen extends StatelessWidget {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: () => context.go('/home'),
+                onPressed: () => Navigator.of(context).pop(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF3B82F6),
                   foregroundColor: Colors.white,
@@ -97,7 +97,7 @@ class SessionAnalysisResultScreen extends StatelessWidget {
                   ),
                 ),
                 child: const Text(
-                  'Volver al Inicio',
+                  'Volver',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,

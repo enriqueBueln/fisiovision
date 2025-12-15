@@ -583,7 +583,66 @@ class _MobileCameraViewState extends State<MobileCameraView> {
             ),
           ),
 
-          // 3. CONTROLES (Abajo)
+          // 3. TARJETA DE AYUDA DE COMANDOS DE VOZ
+          Positioned(
+            right: 16,
+            bottom: 140,
+            child: Container(
+              width: 280,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.85),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white24),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.mic, color: Colors.blue, size: 18),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Comandos de Voz',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Divider(color: Colors.white24, height: 1),
+                  const SizedBox(height: 8),
+                  _buildVoiceCommand('🦴', 'Mostrar/Ocultar esqueleto'),
+                  _buildVoiceCommand('📐', 'Mostrar/Ocultar ángulos'),
+                  _buildVoiceCommand('💪', 'Mostrar codo/rodilla/hombro'),
+                  _buildVoiceCommand('👀', 'Mostrar/Ocultar todo'),
+                  _buildVoiceCommand('🛑', 'Terminar sesión/ejercicio'),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      'Tip: Habla claro y espera la confirmación',
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontSize: 10,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // 4. CONTROLES (Abajo)
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
@@ -613,6 +672,27 @@ class _MobileCameraViewState extends State<MobileCameraView> {
               ),
             ),
           )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVoiceCommand(String emoji, String command) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 14)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              command,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 11,
+              ),
+            ),
+          ),
         ],
       ),
     );
