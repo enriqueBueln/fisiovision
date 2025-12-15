@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 
 // --- SERVICIO ---
 class RutinaService {
-  final String baseUrl = "http://localhost:8000/api/v1";
+  final String baseUrl = "http:///192.168.100.7:8000/api/v1";
 
   // Obtener los ejercicios asignados a un paciente específico
   Future<List<Ejercicio>> getRutinaPaciente(int idPaciente) async {

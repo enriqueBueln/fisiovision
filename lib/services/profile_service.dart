@@ -8,7 +8,7 @@ import '../services/auth_service.dart';
 
 class ProfileService {
   static String get baseUrl =>
-      dotenv.env['DATABASE_URL'] ?? 'http://localhost:8000';
+      dotenv.env['DATABASE_URL'] ?? 'http:///192.168.100.7:8000';
 
   final AuthService _authService = AuthService();
 

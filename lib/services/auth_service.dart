@@ -9,7 +9,7 @@ import '../models/auth_model.dart';
 class AuthService {
   // Obtener la URL base desde el archivo .env
   static String get baseUrl =>
-      dotenv.env['DATABASE_URL'] ?? 'http://localhost:8000';
+      dotenv.env['DATABASE_URL'] ?? 'http:///192.168.100.7:8000';
 
   // Guardar token en localStorage
   Future<void> saveToken(String token) async {

@@ -12,7 +12,7 @@ class WebSocketService {
   WebSocketService._internal();
 
   static String get baseUrl =>
-      dotenv.env['DATABASE_URL'] ?? 'http://localhost:8000';
+      dotenv.env['DATABASE_URL'] ?? 'http:///192.168.100.7:8000';
   
   static String get wsUrl => baseUrl.replaceFirst('http', 'ws');
 

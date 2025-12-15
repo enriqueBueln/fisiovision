@@ -6,7 +6,7 @@ import '../models/sesion_model.dart';
 
 class SesionService {
   static String get baseUrl =>
-      dotenv.env['DATABASE_URL'] ?? 'http://localhost:8000';
+      dotenv.env['DATABASE_URL'] ?? 'http:///192.168.100.7:8000';
 
   // Obtener token del localStorage
   Future<String?> _getToken() async {

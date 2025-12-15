@@ -6,7 +6,7 @@ import 'package:fisiovision/config/token.dart';
 
 class AssignedExerciseService {
   static String get baseUrl =>
-      dotenv.env['DATABASE_URL'] ?? 'http://localhost:8000';
+      dotenv.env['DATABASE_URL'] ?? 'http:///192.168.100.7:8000';
 
   Future<List<AssignedExerciseModel>> getAssignedExercises({
     int skip = 0,
