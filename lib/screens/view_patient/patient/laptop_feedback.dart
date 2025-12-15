@@ -49,8 +49,16 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
   Ejercicio? _ejercicio;
   Map<String, Map<String, int>>? _objetivoAngulos; // {rodilla: {izquierdo: 90, derecho: 90}}
   double? _tolerancia;
-  String _currentArticulacion = 'rodilla';
-  String _currentLado = 'izquierdo';
+  
+  // Primera articulación
+  String _currentArticulacion1 = 'rodilla';
+  String _currentLado1 = 'izquierdo';
+  double _currentAngle1 = 85.0;
+  
+  // Segunda articulación
+  String? _currentArticulacion2;
+  String _currentLado2 = 'izquierdo';
+  double _currentAngle2 = 85.0;
   
   // Acelerómetro (simulado)
   double _accelX = 0.0;
@@ -126,8 +134,8 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
         _movementIntensity = (magnitude / 3.0).clamp(0.0, 1.0); // Normalizar 0-1
       });
       
-      // Actualizar cada 200ms para simular frecuencia de sensor real
-      _accelTimer = Timer(const Duration(milliseconds: 200), _updateAccelerometer);
+      // Actualizar cada 2 segundos
+      _accelTimer = Timer(const Duration(seconds: 2), _updateAccelerometer);
     }
   }
   
@@ -170,9 +178,28 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
           _objetivoAngulos = angulosMap;
           _tolerancia = ejercicio.tolerance_degrees;
           
-          // Detectar primera articulación disponible
-          if (angulosMap.isNotEmpty) {
-            _currentArticulacion = angulosMap.keys.first;
+          // Detectar primera y segunda articulación disponibles
+          final articulaciones = angulosMap.keys.toList();
+          if (articulaciones.isNotEmpty) {
+            // Primera articulación
+            _currentArticulacion1 = articulaciones[0];
+            final firstArticulacion = angulosMap[_currentArticulacion1]!;
+            if (firstArticulacion.containsKey('izquierdo') && firstArticulacion['izquierdo'] != 0) {
+              _currentLado1 = 'izquierdo';
+            } else if (firstArticulacion.containsKey('derecho') && firstArticulacion['derecho'] != 0) {
+              _currentLado1 = 'derecho';
+            }
+            
+            // Segunda articulación (si existe)
+            if (articulaciones.length > 1) {
+              _currentArticulacion2 = articulaciones[1];
+              final secondArticulacion = angulosMap[_currentArticulacion2]!;
+              if (secondArticulacion.containsKey('izquierdo') && secondArticulacion['izquierdo'] != 0) {
+                _currentLado2 = 'izquierdo';
+              } else if (secondArticulacion.containsKey('derecho') && secondArticulacion['derecho'] != 0) {
+                _currentLado2 = 'derecho';
+              }
+            }
           }
         });
         
@@ -228,13 +255,24 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
                 final angulos = data['angulos'] as Map<String, dynamic>;
                 // angulos tiene estructura: {codo: {izquierdo: 145.2, derecho: 148.7}}
                 
-                // Extraer ángulo de la articulación y lado específico
-                if (angulos.containsKey(_currentArticulacion)) {
-                  final articulacionData = angulos[_currentArticulacion];
-                  if (articulacionData is Map && articulacionData.containsKey(_currentLado)) {
-                    final anguloValue = articulacionData[_currentLado];
+                // Extraer ángulo de la primera articulación
+                if (angulos.containsKey(_currentArticulacion1)) {
+                  final articulacionData = angulos[_currentArticulacion1];
+                  if (articulacionData is Map && articulacionData.containsKey(_currentLado1)) {
+                    final anguloValue = articulacionData[_currentLado1];
                     if (anguloValue is num) {
-                      _currentAngle = anguloValue.toDouble();
+                      _currentAngle1 = anguloValue.toDouble();
+                    }
+                  }
+                }
+                
+                // Extraer ángulo de la segunda articulación (si existe)
+                if (_currentArticulacion2 != null && angulos.containsKey(_currentArticulacion2)) {
+                  final articulacionData = angulos[_currentArticulacion2];
+                  if (articulacionData is Map && articulacionData.containsKey(_currentLado2)) {
+                    final anguloValue = articulacionData[_currentLado2];
+                    if (anguloValue is num) {
+                      _currentAngle2 = anguloValue.toDouble();
                     }
                   }
                 }
@@ -256,21 +294,21 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
     }
   }
 
-  int? _getTargetAngle() {
+  int? _getTargetAngle(String articulacion, String lado) {
     if (_objetivoAngulos == null) return null;
-    if (!_objetivoAngulos!.containsKey(_currentArticulacion)) return null;
+    if (!_objetivoAngulos!.containsKey(articulacion)) return null;
     
-    final articulacionAngulos = _objetivoAngulos![_currentArticulacion]!;
-    return articulacionAngulos[_currentLado];
+    final articulacionAngulos = _objetivoAngulos![articulacion]!;
+    return articulacionAngulos[lado];
   }
   
-  Color _getAngleColor() {
-    final target = _getTargetAngle();
+  Color _getAngleColor(double currentAngle, String articulacion, String lado) {
+    final target = _getTargetAngle(articulacion, lado);
     if (target == null || _tolerancia == null) {
       // Sin datos del ejercicio, usar lógica genérica
-      if (_currentAngle >= 80 && _currentAngle <= 95) {
+      if (currentAngle >= 80 && currentAngle <= 95) {
         return const Color(0xFF10B981);
-      } else if (_currentAngle >= 70 && _currentAngle <= 105) {
+      } else if (currentAngle >= 70 && currentAngle <= 105) {
         return const Color(0xFFF59E0B);
       } else {
         return const Color(0xFFEF4444);
@@ -278,7 +316,7 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
     }
     
     // Comparar con objetivo del ejercicio
-    final diferencia = (_currentAngle - target).abs();
+    final diferencia = (currentAngle - target).abs();
     
     if (diferencia <= _tolerancia!) {
       return const Color(0xFF10B981); // Verde - Perfecto
@@ -289,14 +327,14 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
     }
   }
 
-  String _getFeedbackMessage() {
-    final target = _getTargetAngle();
+  String _getFeedbackMessage(double currentAngle, String articulacion, String lado) {
+    final target = _getTargetAngle(articulacion, lado);
     if (target == null || _tolerancia == null) {
       // Sin datos del ejercicio
       return "Cargando objetivo...";
     }
     
-    final diferencia = _currentAngle - target;
+    final diferencia = currentAngle - target;
     final diferenciaAbs = diferencia.abs();
     
     if (diferenciaAbs <= _tolerancia!) {
@@ -368,8 +406,18 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
     
     final isDarkMode =
         Theme.of(context).brightness == Brightness.dark;
-    final angleColor = _getAngleColor();
-    final feedbackMessage = _getFeedbackMessage();
+    
+    // Colores y mensajes para primera articulación
+    final angleColor1 = _getAngleColor(_currentAngle1, _currentArticulacion1, _currentLado1);
+    final feedbackMessage1 = _getFeedbackMessage(_currentAngle1, _currentArticulacion1, _currentLado1);
+    
+    // Colores y mensajes para segunda articulación (si existe)
+    Color? angleColor2;
+    String? feedbackMessage2;
+    if (_currentArticulacion2 != null) {
+      angleColor2 = _getAngleColor(_currentAngle2, _currentArticulacion2!, _currentLado2);
+      feedbackMessage2 = _getFeedbackMessage(_currentAngle2, _currentArticulacion2!, _currentLado2);
+    }
 
     return Scaffold(
       backgroundColor: isDarkMode
@@ -423,9 +471,9 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
                       : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text(
-                  'Sentadilla',
-                  style: TextStyle(
+                child: Text(
+                  _ejercicio?.name ?? 'Cargando...',
+                  style: const TextStyle(
                     fontWeight: FontWeight.w500,
                     fontSize: 14,
                   ),
@@ -568,30 +616,90 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
                       ),
                     ),
 
-                    // Mensaje de feedback
+                    // Mensajes de feedback
                     Align(
                       alignment: Alignment.bottomCenter,
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 32),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 32,
-                          vertical: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          color: angleColor.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: angleColor.withOpacity(0.3),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Feedback primera articulación
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: angleColor1.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: angleColor1.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '$_currentArticulacion1:',
+                                  style: TextStyle(
+                                    color: angleColor1,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  feedbackMessage1,
+                                  style: TextStyle(
+                                    color: angleColor1,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          feedbackMessage,
-                          style: TextStyle(
-                            color: angleColor,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                          // Feedback segunda articulación (si existe)
+                          if (_currentArticulacion2 != null)
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 32),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: angleColor2!.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: angleColor2.withOpacity(0.3),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '$_currentArticulacion2:',
+                                    style: TextStyle(
+                                      color: angleColor2,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    feedbackMessage2!,
+                                    style: TextStyle(
+                                      color: angleColor2,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else
+                            const SizedBox(height: 32),
+                        ],
                       ),
                     ),
                   ],
@@ -599,7 +707,6 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
               ),
             ),
           ),
-
           // COLUMNA DERECHA: MÉTRICAS
           Expanded(
             flex: 1,
@@ -607,31 +714,31 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
               margin: const EdgeInsets.fromLTRB(0, 24, 24, 24),
               child: Column(
                 children: [
-                  // ÁNGULO
+                  // ÁNGULO 1
                   _MetricCard(
                     isDarkMode: isDarkMode,
-                    title: "Ángulo ${_currentArticulacion}",
+                    title: "Ángulo $_currentArticulacion1 ($_currentLado1)",
                     icon: Icons.architecture,
                     child: Column(
                       children: [
                         const SizedBox(height: 12),
                         // Ángulo actual
                         Text(
-                          '${_currentAngle.toStringAsFixed(0)}°',
+                          '${_currentAngle1.toStringAsFixed(0)}°',
                           style: TextStyle(
-                            color: angleColor,
+                            color: angleColor1,
                             fontSize: 52,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 12),
                         // Mostrar objetivo y diferencia
-                        if (_getTargetAngle() != null && _tolerancia != null) ...[
+                        if (_getTargetAngle(_currentArticulacion1, _currentLado1) != null && _tolerancia != null) ...[
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                'Objetivo: ${_getTargetAngle()}°',
+                                'Objetivo: ${_getTargetAngle(_currentArticulacion1, _currentLado1)}°',
                                 style: TextStyle(
                                   color: isDarkMode
                                       ? const Color(0xFF94A3B8)
@@ -647,13 +754,13 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: angleColor.withOpacity(0.1),
+                                  color: angleColor1.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
                                   '±${_tolerancia!.toStringAsFixed(0)}°',
                                   style: TextStyle(
-                                    color: angleColor,
+                                    color: angleColor1,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -664,10 +771,10 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
                           const SizedBox(height: 8),
                           // Barra de progreso visual
                           _AngleProgressBar(
-                            current: _currentAngle,
-                            target: _getTargetAngle()!.toDouble(),
+                            current: _currentAngle1,
+                            target: _getTargetAngle(_currentArticulacion1, _currentLado1)!.toDouble(),
                             tolerance: _tolerancia!,
-                            color: angleColor,
+                            color: angleColor1,
                             isDarkMode: isDarkMode,
                           ),
                         ] else
@@ -677,7 +784,7 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: angleColor.withOpacity(0.1),
+                              color: angleColor1.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -695,6 +802,97 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
                     ),
                   ),
                   const SizedBox(height: 16),
+
+                  // ÁNGULO 2 (si existe)
+                  if (_currentArticulacion2 != null) ...[
+                    _MetricCard(
+                      isDarkMode: isDarkMode,
+                      title: "Ángulo $_currentArticulacion2 ($_currentLado2)",
+                      icon: Icons.architecture,
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 12),
+                          // Ángulo actual
+                          Text(
+                            '${_currentAngle2.toStringAsFixed(0)}°',
+                            style: TextStyle(
+                              color: angleColor2!,
+                              fontSize: 52,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          // Mostrar objetivo y diferencia
+                          if (_getTargetAngle(_currentArticulacion2!, _currentLado2) != null && _tolerancia != null) ...[
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Objetivo: ${_getTargetAngle(_currentArticulacion2!, _currentLado2)}°',
+                                  style: TextStyle(
+                                    color: isDarkMode
+                                        ? const Color(0xFF94A3B8)
+                                        : const Color(0xFF64748B),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: angleColor2.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '±${_tolerancia!.toStringAsFixed(0)}°',
+                                    style: TextStyle(
+                                      color: angleColor2,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            // Barra de progreso visual
+                            _AngleProgressBar(
+                              current: _currentAngle2,
+                              target: _getTargetAngle(_currentArticulacion2!, _currentLado2)!.toDouble(),
+                              tolerance: _tolerancia!,
+                              color: angleColor2,
+                              isDarkMode: isDarkMode,
+                            ),
+                          ] else
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: angleColor2.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'Cargando objetivo...',
+                                style: TextStyle(
+                                  color: isDarkMode
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF64748B),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   // TIEMPO
                   _MetricCard(

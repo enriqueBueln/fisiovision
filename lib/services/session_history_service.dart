@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:fisiovision/services/auth_service.dart';
 
 class SessionHistoryService {
-  final String baseUrl = 'http:///192.168.100.7:8000/api/v1';
+  final String baseUrl = 'http://localhost:8000/api/v1';
   final AuthService _authService = AuthService();
 
   Future<List<SessionHistoryModel>> getSessions({

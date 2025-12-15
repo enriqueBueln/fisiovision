@@ -6,7 +6,7 @@ import '../models/paciente_model.dart';
 
 class PacienteService {
   final String baseUrl =
-      "http:///192.168.100.7:8000/api/v1"; // Cambiar por la URL real de la API
+      "http://localhost:8000/api/v1"; // Cambiar por la URL real de la API
 
   // GET: Obtener pacientes
   Future<List<Paciente>> getPacientes() async {

@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:riverpod/riverpod.dart';
 
 class EjercicioService {
-  final String baseUrl = "http:///192.168.100.7:8000/api/v1";
+  final String baseUrl = "http://localhost:8000/api/v1";
 
   // GET: Obtener pacientes
   Future<List<Ejercicio>> getEjercicios() async {
