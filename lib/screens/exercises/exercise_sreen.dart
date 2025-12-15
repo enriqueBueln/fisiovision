@@ -96,6 +96,7 @@ class ExercisesView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ejerciciosAsync = ref.watch(ejerciciosProvider);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return ejerciciosAsync.when(
       loading: () => const Center(
@@ -120,7 +121,7 @@ class ExercisesView extends ConsumerWidget {
         return Card(
           elevation: 2,
           margin: const EdgeInsets.only(top: 10),
-          color: Colors.white,
+          color: isDarkMode ? const Color(0xFF1C2033) : Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -148,9 +149,10 @@ class ExercisesView extends ConsumerWidget {
                 ),
                 title: Text(
                   exercise.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
+                    color: isDarkMode ? Colors.white : Colors.black87,
                   ),
                 ),
                 subtitle: Column(
@@ -184,12 +186,15 @@ class ExercisesView extends ConsumerWidget {
                       '${exercise.duration_seconds > 0 ? ' • ${exercise.duration_seconds}s' : ''}',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey.shade700,
+                        color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
                       ),
                     ),
                   ],
                 ),
-                trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: isDarkMode ? Colors.grey.shade600 : Colors.grey,
+                ),
                 onTap: () {
                   ExerciseDetailModal.show(context, exercise);
                 },

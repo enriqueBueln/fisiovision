@@ -1,5 +1,6 @@
 // main.dart
 import 'package:fisiovision/config/router.dart';
+import 'package:fisiovision/config/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -14,19 +15,18 @@ Future<void> main() async {
   runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(appThemeProvider);
+    
     return MaterialApp.router(
       routerConfig: appRouter,
       title: 'Fisioterapia App',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.lightBlueAccent,
-      ),
+      theme: theme,
     );
   }
 }

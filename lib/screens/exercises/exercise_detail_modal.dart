@@ -86,7 +86,7 @@ class ExerciseDetailModal extends StatelessWidget {
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1A1F3A) : Colors.white,
+        color: isDarkMode ? const Color(0xFF1C2033) : Colors.white,
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(24),
         ),
@@ -100,7 +100,7 @@ class ExerciseDetailModal extends StatelessWidget {
             height: 4,
             decoration: BoxDecoration(
               color: isDarkMode
-                  ? Colors.white24
+                  ? Colors.white38
                   : Colors.grey[300],
               borderRadius: BorderRadius.circular(2),
             ),
@@ -380,12 +380,12 @@ class _SectionCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDarkMode
-            ? const Color(0xFF0F1629)
+            ? const Color(0xFF252B3F)
             : const Color(0xFFF8F9FA),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDarkMode
-              ? Colors.white.withOpacity(0.05)
+              ? Colors.white.withOpacity(0.1)
               : Colors.grey.withOpacity(0.15),
         ),
       ),
@@ -436,9 +436,15 @@ class _ParameterBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: isDarkMode 
+            ? color.withOpacity(0.15)
+            : color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(
+          color: isDarkMode 
+              ? color.withOpacity(0.4)
+              : color.withOpacity(0.3),
+        ),
       ),
       child: Column(
         children: [

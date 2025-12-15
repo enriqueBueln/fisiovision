@@ -30,7 +30,7 @@ class _AuthScreenState extends ConsumerState<LoginScreen> {
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
         backgroundColor: isDarkMode
-            ? const Color(0xFF0A0E21)
+            ? const Color(0xFF0E1117)
             : const Color(0xFFF8F9FA),
         body: SafeArea(
           child: Center(
@@ -95,7 +95,7 @@ class _AuthScreenState extends ConsumerState<LoginScreen> {
                     padding: const EdgeInsets.all(32),
                     decoration: BoxDecoration(
                       color: isDarkMode
-                          ? const Color(0xFF1A1F3A)
+                          ? const Color(0xFF1C2033)
                           : Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
@@ -668,7 +668,7 @@ InputDecoration _buildInputDecoration({
     suffixIcon: suffixIcon,
     filled: true,
     fillColor: isDarkMode
-        ? const Color(0xFF0F1629)
+        ? const Color(0xFF252B3F)
         : const Color(0xFFF8F9FA),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
@@ -678,7 +678,7 @@ InputDecoration _buildInputDecoration({
       borderRadius: BorderRadius.circular(12),
       borderSide: BorderSide(
         color: isDarkMode
-            ? Colors.white.withOpacity(0.05)
+            ? Colors.white.withOpacity(0.1)
             : Colors.grey.withOpacity(0.15),
         width: 1,
       ),

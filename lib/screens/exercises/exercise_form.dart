@@ -174,10 +174,10 @@ class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
 
     return Scaffold(
       backgroundColor: isDarkMode
-          ? const Color(0xFF0A0E21)
+          ? const Color(0xFF0E1117)
           : const Color(0xFFF8F9FA),
       appBar: AppBar(
-        backgroundColor: isDarkMode ? const Color(0xFF1A1F3A) : Colors.white,
+        backgroundColor: isDarkMode ? const Color(0xFF1C2033) : Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 20),
@@ -223,12 +223,12 @@ class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: isDarkMode
-                          ? const Color(0xFF0F1629)
+                          ? const Color(0xFF252B3F)
                           : const Color(0xFFF8F9FA),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isDarkMode
-                            ? Colors.white.withOpacity(0.05)
+                            ? Colors.white.withOpacity(0.1)
                             : Colors.grey.withOpacity(0.15),
                       ),
                     ),
@@ -282,7 +282,7 @@ class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
                                     color: isSelected
                                         ? color
                                         : (isDarkMode
-                                              ? Colors.white12
+                                              ? Colors.white24
                                               : Colors.grey[300]!),
                                     width: isSelected ? 2 : 1,
                                   ),
@@ -513,7 +513,7 @@ class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
 
                         return Chip(
                           backgroundColor: isDarkMode
-                              ? const Color(0xFF0F1629)
+                              ? const Color(0xFF252B3F)
                               : const Color(0xFFF8F9FA),
                           label: Text(
                             '$articulacion — izq: ${lados["izquierdo"] ?? "-"}° / der: ${lados["derecho"] ?? "-"}°',
@@ -668,11 +668,11 @@ class _SectionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1A1F3A) : Colors.white,
+        color: isDarkMode ? const Color(0xFF1C2033) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDarkMode
-              ? Colors.white.withOpacity(0.05)
+              ? Colors.white.withOpacity(0.1)
               : Colors.grey.withOpacity(0.15),
         ),
       ),
@@ -741,7 +741,7 @@ class _CustomTextField extends StatelessWidget {
         prefixIcon: Icon(icon, size: 20),
         filled: true,
         fillColor: isDarkMode
-            ? const Color(0xFF0F1629)
+            ? const Color(0xFF252B3F)
             : const Color(0xFFF8F9FA),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -751,7 +751,7 @@ class _CustomTextField extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
             color: isDarkMode
-                ? Colors.white.withOpacity(0.05)
+                ? Colors.white.withOpacity(0.1)
                 : Colors.grey.withOpacity(0.15),
           ),
         ),

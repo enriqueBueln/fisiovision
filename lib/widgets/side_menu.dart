@@ -1,3 +1,5 @@
+import 'package:fisiovision/config/theme/app_theme.dart';
+import 'package:fisiovision/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,14 +7,11 @@ import 'package:riverpod/legacy.dart';
 import '../config/menu_items.dart';
 
 // --- PROVIDERS ---
-final selectedMenuItemLinkProvider = StateProvider<String?>(
-  (ref) => null,
-);
+final selectedMenuItemLinkProvider = StateProvider<String?>((ref) => null);
 
-final themeNotifierProvider =
-    StateNotifierProvider<ThemeNotifier, bool>(
-      (ref) => ThemeNotifier(false),
-    );
+// final themeNotifierProvider = StateNotifierProvider<ThemeNotifier, bool>(
+//   (ref) => ThemeNotifier(false),
+// );
 
 class ThemeNotifier extends StateNotifier<bool> {
   ThemeNotifier(bool isDarkMode) : super(isDarkMode);
@@ -41,9 +40,7 @@ class ButtonActionMain extends StatelessWidget {
       onPressed: onPressed,
       icon: icon ?? const Icon(Icons.arrow_forward),
       label: Text(text),
-      style: ElevatedButton.styleFrom(
-        minimumSize: const Size.fromHeight(50),
-      ),
+      style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
     );
   }
 }
@@ -71,8 +68,7 @@ class SideMenu extends ConsumerWidget {
     if (appMenuItems.any((item) => item.link == currentPath) &&
         selectedLink != currentPath) {
       Future.microtask(() {
-        ref.read(selectedMenuItemLinkProvider.notifier).state =
-            currentPath;
+        ref.read(selectedMenuItemLinkProvider.notifier).state = currentPath;
       });
     }
 
@@ -87,12 +83,7 @@ class SideMenu extends ConsumerWidget {
           children: [
             // ---- Header ----
             Padding(
-              padding: EdgeInsets.fromLTRB(
-                28,
-                hasNotch ? 0 : 20,
-                16,
-                10,
-              ),
+              padding: EdgeInsets.fromLTRB(28, hasNotch ? 0 : 20, 16, 10),
               child: Row(
                 children: [
                   Icon(Icons.build, color: colorScheme.primary),
@@ -102,9 +93,7 @@ class SideMenu extends ConsumerWidget {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(
-                        context,
-                      ).textTheme.titleLarge?.color,
+                      color: Theme.of(context).textTheme.titleLarge?.color,
                     ),
                   ),
                 ],
@@ -141,12 +130,8 @@ class SideMenu extends ConsumerWidget {
                     ),
                   ),
                   onTap: () {
-                    ref
-                        .read(
-                          selectedMenuItemLinkProvider.notifier,
-                        )
-                        .state = item
-                        .link;
+                    ref.read(selectedMenuItemLinkProvider.notifier).state =
+                        item.link;
                     context.go(item.link);
                     scaffoldKey.currentState?.closeDrawer();
                   },
@@ -155,10 +140,7 @@ class SideMenu extends ConsumerWidget {
             }),
 
             const Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: 18,
-                vertical: 10,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               child: Divider(),
             ),
 
@@ -167,9 +149,7 @@ class SideMenu extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 5, 16, 10),
               child: ListTile(
                 onTap: () {
-                  ref
-                      .read(themeNotifierProvider.notifier)
-                      .toggleTheme();
+                  ref.read(themeNotifierProvider.notifier).toggleTheme();
                 },
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -180,26 +160,19 @@ class SideMenu extends ConsumerWidget {
                       : Icons.dark_mode_outlined,
                   color: isDarkMode ? Colors.amber : Colors.indigo,
                 ),
-                title: Text(
-                  isDarkMode ? 'Modo Claro' : 'Modo Oscuro',
-                ),
+                title: Text(isDarkMode ? 'Modo Claro' : 'Modo Oscuro'),
                 trailing: Switch(
                   value: isDarkMode,
                   activeColor: Colors.amber,
                   onChanged: (value) {
-                    ref
-                        .read(themeNotifierProvider.notifier)
-                        .setDarkMode(value);
+                    ref.read(themeNotifierProvider.notifier).setDarkMode(value);
                   },
                 ),
               ),
             ),
 
             const Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: 18,
-                vertical: 10,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               child: Divider(),
             ),
 
@@ -209,13 +182,13 @@ class SideMenu extends ConsumerWidget {
               child: ButtonActionMain(
                 text: 'Cerrar Sesión',
                 onPressed: () {
-                  context.go('/');
+                  final authService = AuthService();
+                  authService.logout();
+                  context.go('/login');
                 },
                 icon: Icon(
                   Icons.logout,
-                  color: isDarkMode
-                      ? Colors.white
-                      : Colors.black87,
+                  color: isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
             ),
