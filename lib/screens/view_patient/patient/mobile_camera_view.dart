@@ -60,11 +60,15 @@ class _MobileCameraViewState extends State<MobileCameraView> {
         throw Exception('No hay cámaras disponibles');
       }
 
+      final frontCamera = cameras.firstWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.front,
+        orElse: () => cameras.first,
+      );
+
       _cameraController = CameraController(
-        cameras.first,
+        frontCamera,
         ResolutionPreset.medium,
         enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.jpeg,
       );
 
       await _cameraController!.initialize();
