@@ -362,6 +362,46 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
                         ),
                 ),
               ),
+
+              const SizedBox(height: 24),
+
+              // BOTÓN
+              SizedBox(
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                  context.go('/laptop-viewer'); 
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 10, 174, 161),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                    disabledBackgroundColor: isDarkMode
+                        ? Colors.grey[800]
+                        : Colors.grey[300],
+                  ),
+                  child: authState.isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Conectar a una sesión',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                ),
+              ),
             ],
           ),
         ),
