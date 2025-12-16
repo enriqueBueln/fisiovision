@@ -1,17 +1,20 @@
 import 'dart:convert';
 import 'package:fisiovision/config/token.dart';
 import 'package:fisiovision/models/ejercicio_model.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 // --- SERVICIO ---
 class RutinaService {
-  final String baseUrl = "http:///localhost:8000/api/v1";
+  static String get baseUrl =>
+      // ignore: prefer_adjacent_string_concatenation
+      dotenv.env['DATABASE_URL'] ?? 'http:///192.168.100.7:8000' + '/api/v1';
 
   // Obtener los ejercicios asignados a un paciente específico
   Future<List<Ejercicio>> getRutinaPaciente(int idPaciente) async {
     // Ajusta el endpoint según tu backend real
     final response = await http.get(
-      Uri.parse('$baseUrl/ejercicios-asignados/paciente/$idPaciente'),
+      Uri.parse('$baseUrl/api/v1/ejercicios-asignados/paciente/$idPaciente'),
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer ${await getData('access_token')}",
@@ -33,7 +36,7 @@ class RutinaService {
   ) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/ejercicios-asignados/'),
+        Uri.parse('$baseUrl/api/v1/ejercicios-asignados/'),
         headers: {
           "Content-Type": "application/json",
           "Authorization": "Bearer ${await getData('access_token')}",

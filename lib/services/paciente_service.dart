@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:fisiovision/config/token.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:riverpod/riverpod.dart';
 import '../models/paciente_model.dart';
@@ -12,7 +13,7 @@ class PacienteService {
   // GET: Obtener pacientes
   Future<List<Paciente>> getPacientes() async {
     final response = await http.get(
-      Uri.parse('$baseUrl/pacientes'),
+      Uri.parse('$baseUrl/api/v1/pacientes'),
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer ${await getData('access_token')}",
@@ -30,7 +31,7 @@ class PacienteService {
 
   Future<Paciente> getPacienteById(int id) async {
     final response = await http.get(
-      Uri.parse('$baseUrl/pacientes/$id'),
+      Uri.parse('$baseUrl/api/v1/pacientes/$id'),
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer ${await getData('access_token')}",
@@ -50,7 +51,7 @@ class PacienteService {
     print('Token obtenido en addPaciente: $token');
     print('Enviando paciente: ${paciente.toJson()}');
     final response = await http.post(
-      Uri.parse('$baseUrl/pacientes'),
+      Uri.parse('$baseUrl/api/v1/pacientes'),
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer $token",

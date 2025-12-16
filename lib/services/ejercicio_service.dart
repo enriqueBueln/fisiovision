@@ -13,7 +13,7 @@ class EjercicioService {
   // GET: Obtener pacientes
   Future<List<Ejercicio>> getEjercicios() async {
     final response = await http.get(
-      Uri.parse('$baseUrl/ejercicios'),
+      Uri.parse('$baseUrl/api/v1/ejercicios'),
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer ${await getData('access_token')}",
@@ -34,7 +34,7 @@ class EjercicioService {
     String token = await getData('access_token');
     print(ejercicio.toString());
     await http.post(
-      Uri.parse('$baseUrl/ejercicios'),
+      Uri.parse('$baseUrl/api/v1/ejercicios'),
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer $token",
@@ -44,7 +44,7 @@ class EjercicioService {
   }
   Future<Ejercicio> getEjercicioById(int id) async {
     final response = await http.get(
-      Uri.parse('$baseUrl/ejercicios/$id'),
+      Uri.parse('$baseUrl/api/v1/ejercicios/$id'),
       headers: {
         "Content-Type": "application/json",
       },

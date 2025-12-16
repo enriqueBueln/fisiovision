@@ -1,11 +1,14 @@
 // services/session_history_service.dart
 import 'dart:convert';
 import 'package:fisiovision/models/sesion_history_model.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:fisiovision/services/auth_service.dart';
 
 class SessionHistoryService {
-  final String baseUrl = 'http://localhost:8000/api/v1';
+  static String get baseUrl =>
+      // ignore: prefer_adjacent_string_concatenation
+      dotenv.env['DATABASE_URL'] ?? 'http:///192.168.100.7:8000' + '/api/v1';
   final AuthService _authService = AuthService();
 
   Future<List<SessionHistoryModel>> getSessions({
