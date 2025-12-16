@@ -13,7 +13,7 @@ class PacienteService {
   // GET: Obtener pacientes
   Future<List<Paciente>> getPacientes() async {
     final response = await http.get(
-      Uri.parse('$baseUrl/pacientes'),
+      Uri.parse('$baseUrl/api/v1/pacientes'),
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer ${await getData('access_token')}",
@@ -31,7 +31,7 @@ class PacienteService {
 
   Future<Paciente> getPacienteById(int id) async {
     final response = await http.get(
-      Uri.parse('$baseUrl/pacientes/$id'),
+      Uri.parse('$baseUrl/api/v1/pacientes/$id'),
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer ${await getData('access_token')}",
@@ -51,7 +51,7 @@ class PacienteService {
     print('Token obtenido en addPaciente: $token');
     print('Enviando paciente: ${paciente.toJson()}');
     final response = await http.post(
-      Uri.parse('$baseUrl/pacientes'),
+      Uri.parse('$baseUrl/api/v1/pacientes'),
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer $token",
