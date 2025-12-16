@@ -45,47 +45,116 @@ class _MobileCameraViewState extends State<MobileCameraView> {
   }
 
   @override
-  void dispose() {
+  void dispose() async {
+    print('🔄 Liberando recursos de la cámara...');
     _stopStreaming();
-    _cameraController?.dispose();
+    
+    // Asegurar que la cámara se libere correctamente
+    try {
+      await _cameraController?.dispose();
+      _cameraController = null;
+      print('✅ Cámara liberada');
+    } catch (e) {
+      print('⚠️ Error al liberar cámara: $e');
+    }
+    
     _wsService.dispose();
     _voiceService.dispose();
     super.dispose();
   }
 
   Future<void> _initializeCamera() async {
-    try {
-      final cameras = await availableCameras();
-      if (cameras.isEmpty) {
-        throw Exception('No hay cámaras disponibles');
-      }
+    int retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      try {
+        print('🎥 Intento ${retryCount + 1} de inicializar cámara...');
+        
+        // Limpiar controlador previo si existe
+        await _cameraController?.dispose();
+        _cameraController = null;
+        
+        // Pequeña espera para liberar recursos
+        await Future.delayed(Duration(milliseconds: 500 * (retryCount + 1)));
+        
+        final cameras = await availableCameras();
+        if (cameras.isEmpty) {
+          throw Exception('No hay cámaras disponibles en el dispositivo');
+        }
 
-      final frontCamera = cameras.firstWhere(
-        (camera) => camera.lensDirection == CameraLensDirection.front,
-        orElse: () => cameras.first,
-      );
-
-      _cameraController = CameraController(
-        frontCamera,
-        ResolutionPreset.medium,
-        enableAudio: false,
-      );
-
-      await _cameraController!.initialize();
-      
-      setState(() => _isInitializing = false);
-
-      // Iniciar streaming automáticamente
-      _startFrameStreaming();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al inicializar cámara: $e'),
-            backgroundColor: Colors.red,
-          ),
+        print('📱 Cámaras disponibles: ${cameras.length}');
+        
+        final frontCamera = cameras.firstWhere(
+          (camera) => camera.lensDirection == CameraLensDirection.front,
+          orElse: () => cameras.first,
         );
-        context.pop();
+
+        print('📷 Usando cámara: ${frontCamera.name}');
+
+        _cameraController = CameraController(
+          frontCamera,
+          ResolutionPreset.medium,
+          enableAudio: false,
+          imageFormatGroup: ImageFormatGroup.jpeg,
+        );
+
+        await _cameraController!.initialize();
+        
+        if (!mounted) return;
+        
+        setState(() => _isInitializing = false);
+
+        print('✅ Cámara inicializada exitosamente');
+
+        // Iniciar streaming automáticamente
+        _startFrameStreaming();
+        return; // Éxito, salir del bucle
+        
+      } catch (e) {
+        retryCount++;
+        print('❌ Error intento $retryCount: $e');
+        
+        if (retryCount >= maxRetries) {
+          // Último intento falló
+          if (mounted) {
+            final errorMessage = e.toString().contains('cameraNotReadable')
+                ? 'La cámara está siendo usada por otra aplicación.\n\nPor favor:\n1. Cierra otras apps que usen la cámara\n2. Reinicia la aplicación'
+                : 'Error al inicializar cámara: $e';
+            
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => AlertDialog(
+                title: const Text('Error de Cámara'),
+                content: Text(errorMessage),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      context.pop();
+                    },
+                    child: const Text('Cerrar'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      setState(() {
+                        _isInitializing = true;
+                      });
+                      _initializeCamera();
+                    },
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+            );
+          }
+          return;
+        }
+        
+        // Esperar antes del siguiente reintento
+        await Future.delayed(Duration(seconds: retryCount));
       }
     }
   }
