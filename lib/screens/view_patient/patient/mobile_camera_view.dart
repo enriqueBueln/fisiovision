@@ -118,9 +118,28 @@ class _MobileCameraViewState extends State<MobileCameraView> {
         if (retryCount >= maxRetries) {
           // Último intento falló
           if (mounted) {
-            final errorMessage = e.toString().contains('cameraNotReadable')
-                ? 'La cámara está siendo usada por otra aplicación.\n\nPor favor:\n1. Cierra otras apps que usen la cámara\n2. Reinicia la aplicación'
-                : 'Error al inicializar cámara: $e';
+            String errorMessage;
+            if (e.toString().contains('cameraNotReadable')) {
+              errorMessage = 'La cámara está siendo usada por otra aplicación.\n\n'
+                  '📱 Si estás en móvil:\n'
+                  '• Cierra otras apps de cámara\n'
+                  '• Reinicia la app\n\n'
+                  '💻 Si estás en Windows:\n'
+                  '• Cierra Chrome, Teams, Zoom\n'
+                  '• Verifica Configuración → Privacidad → Cámara\n'
+                  '• Detén el debug (q) y corre: flutter run';
+            } else if (e.toString().contains('CameraException')) {
+              errorMessage = 'Error de hardware de cámara.\n\n'
+                  'Soluciones:\n'
+                  '1. Reinicia el dispositivo\n'
+                  '2. Verifica permisos de cámara\n'
+                  '3. Prueba con otra cámara';
+            } else {
+              errorMessage = 'Error al inicializar cámara:\n$e\n\n'
+                  'Presiona Reintentar después de:\n'
+                  '• Cerrar apps que usen la cámara\n'
+                  '• Verificar permisos';
+            }
             
             showDialog(
               context: context,
@@ -129,6 +148,37 @@ class _MobileCameraViewState extends State<MobileCameraView> {
                 title: const Text('Error de Cámara'),
                 content: Text(errorMessage),
                 actions: [
+                  TextButton(
+                    onPressed: () async {
+                      try {
+                        final cameras = await availableCameras();
+                        if (!mounted) return;
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Cámaras Disponibles'),
+                            content: Text(
+                              cameras.isEmpty
+                                  ? 'No se detectaron cámaras'
+                                  : cameras.map((c) => '${c.name}\n${c.lensDirection}').join('\n\n'),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text('OK'),
+                              ),
+                            ],
+                          ),
+                        );
+                      } catch (e) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: $e')),
+                        );
+                      }
+                    },
+                    child: const Text('Ver Cámaras'),
+                  ),
                   TextButton(
                     onPressed: () {
                       Navigator.of(context).pop();
