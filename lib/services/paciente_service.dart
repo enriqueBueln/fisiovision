@@ -5,8 +5,9 @@ import 'package:riverpod/riverpod.dart';
 import '../models/paciente_model.dart';
 
 class PacienteService {
-  final String baseUrl =
-      "http://localhost:8000/api/v1"; // Cambiar por la URL real de la API
+  static String get baseUrl =>
+      // ignore: prefer_adjacent_string_concatenation
+      dotenv.env['DATABASE_URL'] ?? 'http:///192.168.100.7:8000' + '/api/v1';
 
   // GET: Obtener pacientes
   Future<List<Paciente>> getPacientes() async {

@@ -1,11 +1,14 @@
 import 'dart:convert';
 import 'package:fisiovision/config/token.dart';
 import 'package:fisiovision/models/ejercicio_model.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:riverpod/riverpod.dart';
 
 class EjercicioService {
-  final String baseUrl = "http://localhost:8000/api/v1";
+  static String get baseUrl =>
+      // ignore: prefer_adjacent_string_concatenation
+      dotenv.env['DATABASE_URL'] ?? 'http:///192.168.100.7:8000' + '/api/v1';
 
   // GET: Obtener pacientes
   Future<List<Ejercicio>> getEjercicios() async {
@@ -38,6 +41,20 @@ class EjercicioService {
       },
       body: json.encode(ejercicio),
     );
+  }
+  Future<Ejercicio> getEjercicioById(int id) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/ejercicios/$id'),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    );
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      return Ejercicio.fromJson(data);
+    } else {
+      throw Exception('Error al cargar ejercicio con ID $id');
+    }
   }
 }
 

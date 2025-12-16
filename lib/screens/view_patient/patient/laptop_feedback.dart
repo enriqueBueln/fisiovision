@@ -163,14 +163,9 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
       _addDebugMessage('✅ Sesión: $ejercicioNombre');
       _addDebugMessage('🔍 ID Ejercicio: ${sesion.idEjercicio}');
       
-      // 2. Obtener el ejercicio completo con ángulos objetivo
-      final ejercicios = await _ejercicioService.getEjercicios();
-      _addDebugMessage('📚 Total ejercicios: ${ejercicios.length}');
-      
-      final ejercicio = ejercicios.firstWhere(
-        (e) => e.id == sesion.idEjercicio,
-        orElse: () => throw Exception('Ejercicio no encontrado'),
-      );
+      // 2. Obtener el ejercicio completo directamente por ID
+      final ejercicio = await _ejercicioService.getEjercicioById(sesion.idEjercicio);
+      _addDebugMessage('✅ Ejercicio obtenido: ${ejercicio.name}');
       
       _addDebugMessage('📐 Ángulos obj: ${ejercicio.objective_angles}');
       
