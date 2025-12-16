@@ -51,13 +51,13 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
   double? _tolerancia;
   
   // Primera articulación
-  String _currentArticulacion1 = 'rodilla';
-  String _currentLado1 = 'izquierdo';
+  String? _currentArticulacion1;
+  String? _currentLado1;
   double _currentAngle1 = 85.0;
   
   // Segunda articulación
   String? _currentArticulacion2;
-  String _currentLado2 = 'izquierdo';
+  String? _currentLado2;
   double _currentAngle2 = 85.0;
   
   // Acelerómetro (simulado)
@@ -66,6 +66,18 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
   double _accelZ = 9.8; // Gravedad
   Timer? _accelTimer;
   double _movementIntensity = 0.0; // 0.0 a 1.0
+  
+  // Debug messages
+  List<String> _debugMessages = [];
+  
+  void _addDebugMessage(String msg) {
+    setState(() {
+      _debugMessages.insert(0, '${DateTime.now().toString().substring(11, 19)}: $msg');
+      if (_debugMessages.length > 10) {
+        _debugMessages = _debugMessages.sublist(0, 10);
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -143,69 +155,144 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
     if (widget.sessionId == null) return;
     
     try {
-      print('📋 Cargando información del ejercicio...');
+      _addDebugMessage('📋 Cargando ejercicio...');
       // 1. Obtener la sesión
       final sesion = await _sesionService.getSesion(widget.sessionId!);
-      print('✅ Sesión obtenida: ${sesion.ejercicio?.name}');
+      print(sesion);
+      final ejercicioNombre = sesion.ejercicio?.name ?? 'Desconocido';
+      _addDebugMessage('✅ Sesión: $ejercicioNombre');
+      _addDebugMessage('🔍 ID Ejercicio: ${sesion.idEjercicio}');
       
       // 2. Obtener el ejercicio completo con ángulos objetivo
       final ejercicios = await _ejercicioService.getEjercicios();
+      _addDebugMessage('📚 Total ejercicios: ${ejercicios.length}');
+      
       final ejercicio = ejercicios.firstWhere(
         (e) => e.id == sesion.idEjercicio,
         orElse: () => throw Exception('Ejercicio no encontrado'),
       );
       
-      print('✅ Ejercicio completo obtenido: ${ejercicio.name}');
-      print('   Ángulos objetivo: ${ejercicio.objective_angles}');
-      print('   Tolerancia: ${ejercicio.tolerance_degrees}°');
+      _addDebugMessage('📐 Ángulos obj: ${ejercicio.objective_angles}');
       
       // 3. Parsear ángulos objetivo
       if (ejercicio.objective_angles.isNotEmpty) {
+        _addDebugMessage('🔍 Parseando JSON...');
         final parsed = jsonDecode(ejercicio.objective_angles) as Map<String, dynamic>;
         final angulosMap = <String, Map<String, int>>{};
         
-        parsed.forEach((key, value) {
-          if (value is Map) {
-            angulosMap[key] = {
-              'izquierdo': (value['izquierdo'] as num?)?.toInt() ?? 0,
-              'derecho': (value['derecho'] as num?)?.toInt() ?? 0,
-            };
-          }
-        });
+        // Detectar formato: nuevo {"hombro_izquierdo": {"min": 150, "max": 180}} 
+        // o antiguo {"hombro": {"izquierdo": 180, "derecho": 180}}
+        final firstKey = parsed.keys.first;
+        final isNewFormat = firstKey.contains('_');
+        _addDebugMessage('🔍 Formato: ${isNewFormat ? "NUEVO" : "ANTIGUO"}');
+        _addDebugMessage('🔑 Primera clave: $firstKey');
+        
+        if (isNewFormat) {
+          // Formato nuevo: {"hombro_izquierdo": {"min": 150, "max": 180}}
+          parsed.forEach((key, value) {
+            if (value is Map && value.containsKey('min') && value.containsKey('max')) {
+              // Extraer articulación y lado de la clave
+              final parts = key.split('_');
+              if (parts.length == 2) {
+                final articulacion = parts[0]; // "hombro"
+                final lado = parts[1] == 'izquierda' ? 'izquierdo' : 'derecho'; // "izquierda" -> "izquierdo"
+                final min = (value['min'] as num).toInt();
+                final max = (value['max'] as num).toInt();
+                final promedio = ((min + max) / 2).toInt();
+                
+                angulosMap[articulacion] ??= {};
+                angulosMap[articulacion]![lado] = promedio;
+                print('  ➡️ Agregado: $articulacion -> $lado = $promedio°');
+              }
+            }
+          });
+        } else {
+          // Formato antiguo: {"hombro": {"izquierdo": 180, "derecho": 180}}
+          print('🔍 Procesando formato antiguo...');
+          parsed.forEach((key, value) {
+            print('  🔍 Procesando clave: $key, valor: $value, tipo: ${value.runtimeType}');
+            if (value is Map) {
+              final izq = (value['izquierdo'] as num?)?.toInt() ?? 0;
+              final der = (value['derecho'] as num?)?.toInt() ?? 0;
+              print('  🔍 Valores extraídos - izq: $izq, der: $der');
+              
+              angulosMap[key] = {
+                'izquierdo': izq,
+                'derecho': der,
+              };
+              print('  ➡️ Agregado: $key -> izquierdo=$izq°, derecho=$der°');
+            }
+          });
+        }
+        
+        _addDebugMessage('📊 angulosMap: $angulosMap');
         
         setState(() {
           _ejercicio = ejercicio;
           _objetivoAngulos = angulosMap;
           _tolerancia = ejercicio.tolerance_degrees;
           
-          // Detectar primera y segunda articulación disponibles
+          _addDebugMessage('💾 Estado guardado');
+          _addDebugMessage('🎯 Tolerancia: $_tolerancia°');
+          
+          // Detectar articulaciones y lados disponibles
           final articulaciones = angulosMap.keys.toList();
+          _addDebugMessage('🔍 Arts: $articulaciones');
+          
           if (articulaciones.isNotEmpty) {
-            // Primera articulación
-            _currentArticulacion1 = articulaciones[0];
-            final firstArticulacion = angulosMap[_currentArticulacion1]!;
-            if (firstArticulacion.containsKey('izquierdo') && firstArticulacion['izquierdo'] != 0) {
+            // Primera articulación - buscar el primer lado disponible
+            final firstArticulacion = articulaciones[0];
+            final firstAngulos = angulosMap[firstArticulacion]!;
+            
+            _currentArticulacion1 = firstArticulacion;
+            if (firstAngulos['izquierdo'] != null && firstAngulos['izquierdo']! > 0) {
               _currentLado1 = 'izquierdo';
-            } else if (firstArticulacion.containsKey('derecho') && firstArticulacion['derecho'] != 0) {
+              _addDebugMessage('✅ Art1: $firstArticulacion izq ${firstAngulos['izquierdo']}°');
+            } else if (firstAngulos['derecho'] != null && firstAngulos['derecho']! > 0) {
               _currentLado1 = 'derecho';
+              _addDebugMessage('✅ Art1: $firstArticulacion der ${firstAngulos['derecho']}°');
+            } else {
+              _addDebugMessage('⚠️ No lado para art1');
             }
             
-            // Segunda articulación (si existe)
-            if (articulaciones.length > 1) {
-              _currentArticulacion2 = articulaciones[1];
-              final secondArticulacion = angulosMap[_currentArticulacion2]!;
-              if (secondArticulacion.containsKey('izquierdo') && secondArticulacion['izquierdo'] != 0) {
+            // Segunda articulación/lado
+            if (firstAngulos['derecho'] != null && firstAngulos['derecho']! > 0 && _currentLado1 == 'izquierdo') {
+              _currentArticulacion2 = firstArticulacion;
+              _currentLado2 = 'derecho';
+              _addDebugMessage('✅ Art2: $firstArticulacion der ${firstAngulos['derecho']}°');
+            } else if (firstAngulos['izquierdo'] != null && firstAngulos['izquierdo']! > 0 && _currentLado1 == 'derecho') {
+              _currentArticulacion2 = firstArticulacion;
+              _currentLado2 = 'izquierdo';
+              print('✅ Articulación 2 asignada (mismo músculo): $_currentArticulacion2 $_currentLado2 (${firstAngulos['izquierdo']}°)');
+            } else if (articulaciones.length > 1) {
+              // Si no hay segundo lado, buscar segunda articulación
+              final secondArticulacion = articulaciones[1];
+              final secondAngulos = angulosMap[secondArticulacion]!;
+              print('🔍 Segunda articulación diferente: $secondArticulacion, ángulos: $secondAngulos');
+              
+              _currentArticulacion2 = secondArticulacion;
+              if (secondAngulos['izquierdo'] != null && secondAngulos['izquierdo']! > 0) {
                 _currentLado2 = 'izquierdo';
-              } else if (secondArticulacion.containsKey('derecho') && secondArticulacion['derecho'] != 0) {
+                print('✅ Articulación 2 asignada: $_currentArticulacion2 $_currentLado2 (${secondAngulos['izquierdo']}°)');
+              } else if (secondAngulos['derecho'] != null && secondAngulos['derecho']! > 0) {
                 _currentLado2 = 'derecho';
+                print('✅ Articulación 2 asignada: $_currentArticulacion2 $_currentLado2 (${secondAngulos['derecho']}°)');
               }
             }
+          } else {
+            _addDebugMessage('⚠️ No hay arts en map');
           }
+          
+          _addDebugMessage('🎯 Art1: $_currentArticulacion1 $_currentLado1');
+          _addDebugMessage('🎯 Art2: $_currentArticulacion2 $_currentLado2');
         });
         
-        print('✅ Ángulos objetivo parseados: $_objetivoAngulos');
+        _addDebugMessage('✅ Parseado OK');
+      } else {
+        _addDebugMessage('⚠️ objective_angles vacío');
       }
     } catch (e) {
+      _addDebugMessage('❌ Error: ${e.toString()}');
       print('❌ Error cargando ejercicio: $e');
     }
   }
@@ -256,9 +343,9 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
                 // angulos tiene estructura: {codo: {izquierdo: 145.2, derecho: 148.7}}
                 
                 // Extraer ángulo de la primera articulación
-                if (angulos.containsKey(_currentArticulacion1)) {
+                if (_currentArticulacion1 != null && angulos.containsKey(_currentArticulacion1)) {
                   final articulacionData = angulos[_currentArticulacion1];
-                  if (articulacionData is Map && articulacionData.containsKey(_currentLado1)) {
+                  if (articulacionData is Map && _currentLado1 != null && articulacionData.containsKey(_currentLado1)) {
                     final anguloValue = articulacionData[_currentLado1];
                     if (anguloValue is num) {
                       _currentAngle1 = anguloValue.toDouble();
@@ -269,7 +356,7 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
                 // Extraer ángulo de la segunda articulación (si existe)
                 if (_currentArticulacion2 != null && angulos.containsKey(_currentArticulacion2)) {
                   final articulacionData = angulos[_currentArticulacion2];
-                  if (articulacionData is Map && articulacionData.containsKey(_currentLado2)) {
+                  if (articulacionData is Map && _currentLado2 != null && articulacionData.containsKey(_currentLado2)) {
                     final anguloValue = articulacionData[_currentLado2];
                     if (anguloValue is num) {
                       _currentAngle2 = anguloValue.toDouble();
@@ -408,15 +495,19 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
         Theme.of(context).brightness == Brightness.dark;
     
     // Colores y mensajes para primera articulación
-    final angleColor1 = _getAngleColor(_currentAngle1, _currentArticulacion1, _currentLado1);
-    final feedbackMessage1 = _getFeedbackMessage(_currentAngle1, _currentArticulacion1, _currentLado1);
+    final angleColor1 = _currentArticulacion1 != null && _currentLado1 != null 
+        ? _getAngleColor(_currentAngle1, _currentArticulacion1!, _currentLado1!)
+        : const Color(0xFF6B7280);
+    final feedbackMessage1 = _currentArticulacion1 != null && _currentLado1 != null
+        ? _getFeedbackMessage(_currentAngle1, _currentArticulacion1!, _currentLado1!)
+        : "Cargando ejercicio...";
     
     // Colores y mensajes para segunda articulación (si existe)
     Color? angleColor2;
     String? feedbackMessage2;
-    if (_currentArticulacion2 != null) {
-      angleColor2 = _getAngleColor(_currentAngle2, _currentArticulacion2!, _currentLado2);
-      feedbackMessage2 = _getFeedbackMessage(_currentAngle2, _currentArticulacion2!, _currentLado2);
+    if (_currentArticulacion2 != null && _currentLado2 != null) {
+      angleColor2 = _getAngleColor(_currentAngle2, _currentArticulacion2!, _currentLado2!);
+      feedbackMessage2 = _getFeedbackMessage(_currentAngle2, _currentArticulacion2!, _currentLado2!);
     }
 
     return Scaffold(
@@ -615,6 +706,55 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
                         ),
                       ),
                     ),
+                    
+                    // Panel de Debug
+                    Positioned(
+                      bottom: 20,
+                      left: 20,
+                      child: Container(
+                        width: 400,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isDarkMode
+                              ? const Color(0xFF1E293B).withOpacity(0.95)
+                              : Colors.white.withOpacity(0.95),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isDarkMode
+                                ? const Color(0xFF334155)
+                                : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '🐛 Debug Info',
+                              style: TextStyle(
+                                color: isDarkMode ? Colors.white : Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            ..._debugMessages.map((msg) => Padding(
+                              padding: const EdgeInsets.only(bottom: 2),
+                              child: Text(
+                                msg,
+                                style: TextStyle(
+                                  color: isDarkMode
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF64748B),
+                                  fontSize: 10,
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                            )).toList(),
+                          ],
+                        ),
+                      ),
+                    ),
 
                     // Mensajes de feedback
                     Align(
@@ -640,7 +780,9 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  '$_currentArticulacion1:',
+                                  _currentArticulacion1 != null && _currentLado1 != null
+                                      ? '${_currentArticulacion1!.toUpperCase()} ${_currentLado1!.toUpperCase()}:'
+                                      : 'Cargando...',
                                   style: TextStyle(
                                     color: angleColor1,
                                     fontSize: 16,
@@ -717,7 +859,9 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
                   // ÁNGULO 1
                   _MetricCard(
                     isDarkMode: isDarkMode,
-                    title: "Ángulo $_currentArticulacion1 ($_currentLado1)",
+                    title: _currentArticulacion1 != null && _currentLado1 != null
+                        ? "Ángulo ${_currentArticulacion1!.toUpperCase()} (${_currentLado1!.toUpperCase()})"
+                        : "Cargando ángulo...",
                     icon: Icons.architecture,
                     child: Column(
                       children: [
@@ -733,12 +877,13 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
                         ),
                         const SizedBox(height: 12),
                         // Mostrar objetivo y diferencia
-                        if (_getTargetAngle(_currentArticulacion1, _currentLado1) != null && _tolerancia != null) ...[
+                        if (_currentArticulacion1 != null && _currentLado1 != null && 
+                            _getTargetAngle(_currentArticulacion1!, _currentLado1!) != null && _tolerancia != null) ...[
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                'Objetivo: ${_getTargetAngle(_currentArticulacion1, _currentLado1)}°',
+                                'Objetivo: ${_getTargetAngle(_currentArticulacion1!, _currentLado1!)}°',
                                 style: TextStyle(
                                   color: isDarkMode
                                       ? const Color(0xFF94A3B8)
@@ -772,7 +917,7 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
                           // Barra de progreso visual
                           _AngleProgressBar(
                             current: _currentAngle1,
-                            target: _getTargetAngle(_currentArticulacion1, _currentLado1)!.toDouble(),
+                            target: _getTargetAngle(_currentArticulacion1!, _currentLado1!)!.toDouble(),
                             tolerance: _tolerancia!,
                             color: angleColor1,
                             isDarkMode: isDarkMode,
@@ -823,12 +968,12 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
                           ),
                           const SizedBox(height: 12),
                           // Mostrar objetivo y diferencia
-                          if (_getTargetAngle(_currentArticulacion2!, _currentLado2) != null && _tolerancia != null) ...[
+                          if (_getTargetAngle(_currentArticulacion2!, _currentLado2!) != null && _tolerancia != null) ...[
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  'Objetivo: ${_getTargetAngle(_currentArticulacion2!, _currentLado2)}°',
+                                  'Objetivo: ${_getTargetAngle(_currentArticulacion2!, _currentLado2!)}°',
                                   style: TextStyle(
                                     color: isDarkMode
                                         ? const Color(0xFF94A3B8)
@@ -862,7 +1007,7 @@ class _LaptopFeedbackViewState extends State<LaptopFeedbackView> {
                             // Barra de progreso visual
                             _AngleProgressBar(
                               current: _currentAngle2,
-                              target: _getTargetAngle(_currentArticulacion2!, _currentLado2)!.toDouble(),
+                              target: _getTargetAngle(_currentArticulacion2!, _currentLado2!)!.toDouble(),
                               tolerance: _tolerancia!,
                               color: angleColor2,
                               isDarkMode: isDarkMode,
