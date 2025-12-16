@@ -252,6 +252,13 @@ class _MobileCameraViewState extends State<MobileCameraView> {
     // Enviar frames cada 100ms (10 fps)
     while (_isStreaming && mounted) {
       try {
+        // Verificar que el WebSocket sigue conectado
+        if (!_wsService.isConnected) {
+          print('⚠️ WebSocket desconectado, deteniendo streaming');
+          _stopStreaming();
+          break;
+        }
+        
         final image = await _cameraController!.takePicture();
         final bytes = await image.readAsBytes();
         final base64Image = base64Encode(bytes);
@@ -270,6 +277,12 @@ class _MobileCameraViewState extends State<MobileCameraView> {
         await Future.delayed(const Duration(milliseconds: 100));
       } catch (e) {
         print('Error enviando frame: $e');
+        // Si es error de WebSocket, detener streaming
+        if (e.toString().contains('WebSocket no está conectado')) {
+          print('⚠️ Deteniendo streaming por error de WebSocket');
+          _stopStreaming();
+          break;
+        }
       }
     }
   }
@@ -453,6 +466,9 @@ class _MobileCameraViewState extends State<MobileCameraView> {
 
   Future<void> _finishSession() async {
     print('🏁 Iniciando finalización de sesión...');
+    
+    // Detener el streaming primero
+    _stopStreaming();
     
     if (widget.sessionId == null) {
       print('⚠️ No hay sessionId para finalizar');

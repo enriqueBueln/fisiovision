@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:fisiovision/config/token.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:riverpod/riverpod.dart';
 import '../models/paciente_model.dart';
